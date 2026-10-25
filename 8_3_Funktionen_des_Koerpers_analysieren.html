@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>8_3 Funktionen des Körpers analysieren</title>
+<style>
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('fonts/nunito.woff2') format('woff2'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'JetBrains Mono'; src: url('fonts/jetbrains-mono.woff2') format('woff2'); font-weight: 100 800; font-display: swap; }
+/* Farbschema "Energie": kräftig, jugendlich, mit gutem Kontrast */
+:root {
+  --font-display: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'Nunito', 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-md: 1.125rem;
+  --text-lg: 1.375rem; --text-xl: 1.75rem; --text-2xl: 2.25rem; --text-3xl: 3rem;
+  --tracking-wider: 0.12em;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+  --radius-sm: 8px; --radius-md: 16px; --radius-lg: 22px;
+
+  --pop-yellow: #fed835;
+  --pop-pink:   #fb55b1;
+  --pop-cyan:   #36dcec;
+  --pop-green:  #49de78;
+  --ink: #161332;
+  --st-1: #fc65b6;
+  --st-2: #ff8f31;
+  --st-3: #edd643;
+  --st-4: #4cd676;
+  --st-5: #43cae7;
+  --st-6: #ae8bff;
+
+  --bg: #f3f4ff;
+  --surface: #fdfdff;
+  --subtle: #e6e7ff;
+  --text: #181535;
+  --muted: #4a486d;
+  --line: #1f174a;
+  --line-soft: #babadd;
+  --primary: #6442e4;
+  --on-primary: #fbfbff;
+  --accent-text: #502cbe;
+  --accent-bg: #e3e4ff;
+  --good: #005928;   --good-bg: #c1f7d2;
+  --bad:  #a90017;    --bad-bg:  #ffdfda;
+  --warn: #784000;    --warn-bg: #ffeea0;
+  --header-bg: #2f127b;
+  --header-text: #fbfbff;
+  --header-muted: #ccccf8;
+  --header-line: #6358ba;
+  --bar-track: #d4d4f5;
+  --bar-fill: #745af4;
+  --xp: var(--pop-yellow);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #120e2d; --surface: #1f1a43; --subtle: #181439;
+    --text: #f4f4fd; --muted: #c0c0e4; --line: #9d99ed; --line-soft: #3e3a70;
+    --primary: #a89fff; --on-primary: #141030;
+    --accent-text: #c9c6ff; --accent-bg: #2d2560;
+    --good: #5eee9c; --good-bg: #00361a;
+    --bad: #ffa59c;   --bad-bg: #4f1a18;
+    --warn: #f6da6f;  --warn-bg: #3e2e00;
+    --header-bg: #0a0427;
+    --bar-track: #373267; --bar-fill: #aea5ff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #120e2d; --surface: #1f1a43; --subtle: #181439;
+  --text: #f4f4fd; --muted: #c0c0e4; --line: #9d99ed; --line-soft: #3e3a70;
+  --primary: #a89fff; --on-primary: #141030;
+  --accent-text: #c9c6ff; --accent-bg: #2d2560;
+  --good: #5eee9c; --good-bg: #00361a;
+  --bad: #ffa59c;   --bad-bg: #4f1a18;
+  --warn: #f6da6f;  --warn-bg: #3e2e00;
+  --header-bg: #0a0427;
+  --bar-track: #373267; --bar-fill: #aea5ff;
+}
+
+/* Basis */
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.45; min-height: 100vh; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--header-bg); }
+h1, h2, h3, p { margin: 0; }
+.mono { font-family: var(--font-mono); }
+.b { font-weight: 700; }
+.small { font-size: var(--text-sm); color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 720px; margin: 0 auto; padding: var(--space-5) var(--space-4) var(--space-7); }
+.tag { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--accent-text); }
+.tag.inv { color: var(--header-muted); }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* Kopfbereich */
+.top { background: var(--header-bg); color: var(--header-text); padding: var(--space-4) var(--space-4) var(--space-5); border-bottom: 2px solid var(--line); }
+.top > * { max-width: 688px; margin-left: auto; margin-right: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+.logochip { background: #fff; border-radius: var(--radius-md); padding: 6px 10px; display: flex; }
+.logochip img { height: 30px; width: auto; display: block; }
+.top h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); line-height: 1.05; letter-spacing: -0.01em; }
+.lead { color: var(--header-muted); font-size: var(--text-md); margin-top: var(--space-2); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-5); }
+.stat { border: 2px solid var(--header-line); border-radius: var(--radius-md); padding: var(--space-3); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .k { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--header-muted); }
+.stat .v { font-weight: 700; font-size: var(--text-md); line-height: 1.15; overflow-wrap: anywhere; }
+.stat .s { font-size: var(--text-xs); color: var(--header-muted); }
+.xpbar { height: 12px; border-radius: 6px; background: var(--header-line); margin-top: var(--space-4); overflow: hidden; }
+.xpbar > div { height: 100%; background: #73ce95; border-radius: 6px; transition: width .3s ease; }
+.xpbar.light { background: var(--bar-track); margin: var(--space-3) 0 var(--space-4); }
+.xpbar.light > div { background: var(--bar-fill); }
+
+/* Lernpfad */
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-4) 0 var(--space-3); }
+.row h2, .sumh { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); line-height: 1.15; }
+.streaknote { margin-top: var(--space-1); }
+.path { display: flex; flex-direction: column; gap: var(--space-3); }
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); }
+.st { display: grid; grid-template-columns: 44px 1fr; grid-template-areas: "num body" "act act"; gap: var(--space-3) var(--space-3); align-items: start; }
+.st .num { grid-area: num; width: 44px; height: 44px; border-radius: 50%; background: var(--text); color: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-lg); }
+.st .stbody { grid-area: body; min-width: 0; }
+.st > .btn, .st > .lock { grid-area: act; }
+.st h3, .review h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; }
+.sub { font-size: var(--text-sm); color: var(--accent-text); margin-top: 2px; font-weight: 500; }
+.mast { display: flex; gap: 4px; margin-top: var(--space-3); }
+.seg { height: 8px; flex: 1; border-radius: 3px; background: var(--bar-track); }
+.seg.on { background: var(--bar-fill); }
+.starsrow { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+.stars { font-size: var(--text-lg); letter-spacing: 3px; color: var(--accent-text); }
+.st.locked { border-style: dashed; border-color: var(--line-soft); background: var(--subtle); }
+.st.locked .num { background: var(--line-soft); color: var(--muted); }
+.st.locked h3 { color: var(--muted); }
+.lock { text-align: center; padding: var(--space-2); font-weight: 600; }
+.review { display: grid; gap: var(--space-3); background: var(--accent-bg); }
+.review p { margin-top: var(--space-1); color: var(--text); }
+.foot { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 2px solid var(--line); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+
+/* Buttons */
+.btn { appearance: none; min-height: 52px; padding: 0 var(--space-5); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: 700 var(--text-md)/1.1 var(--font-body); cursor: pointer; }
+@media (hover: hover) { .btn:hover { background: var(--subtle); } }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+@media (hover: hover) { .btn-primary:hover { background: var(--primary); filter: brightness(1.08); } }
+.btn.sm { min-height: 40px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+.btn.block { display: block; width: 100%; margin-top: var(--space-3); }
+.st > .btn { width: 100%; }
+.review > .btn { width: 100%; }
+
+/* Runde */
+.round { padding-top: var(--space-4); }
+.rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.qcard { padding: var(--space-5) var(--space-4); }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+.badge { font-size: var(--text-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); outline: 1px solid var(--warn); }
+.q { font-family: var(--font-body); font-weight: 700; font-size: var(--text-lg); line-height: 1.3; margin-bottom: var(--space-5); }
+.opts { display: flex; flex-direction: column; gap: var(--space-3); }
+.opt { appearance: none; display: flex; align-items: flex-start; gap: var(--space-3); text-align: left; width: 100%; min-height: 56px; padding: var(--space-3) var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: 500 var(--text-md)/1.35 var(--font-body); cursor: pointer; }
+@media (hover: hover) { .opt:hover:not(:disabled) { background: var(--subtle); } }
+.opt .ltr { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); }
+.opt:disabled { cursor: default; color: var(--text); opacity: .75; }
+.opt.good { opacity: 1; background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.opt.good .ltr { background: var(--good); color: var(--good-bg); border-color: var(--good); }
+.opt.bad { opacity: 1; background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.opt.bad .ltr { background: var(--bad); color: var(--bad-bg); border-color: var(--bad); }
+.ansrow { display: flex; align-items: stretch; gap: var(--space-3); margin-bottom: var(--space-2); }
+.numin { flex: 1; min-width: 0; min-height: 60px; padding: 0 var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font-size: var(--text-xl); font-weight: 700; }
+.numin:disabled { opacity: .7; }
+.unitl { display: flex; align-items: center; min-width: 3.2em; font-size: var(--text-lg); font-weight: 700; color: var(--accent-text); }
+.fb { margin-top: var(--space-4); border: 2px solid; border-radius: var(--radius-md); padding: var(--space-4); }
+.fb .fbt { font-weight: 700; font-size: var(--text-md); margin-bottom: var(--space-1); }
+.fb .fbb { font-size: var(--text-base); line-height: 1.5; }
+.fb.good { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.fb.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.fb.warn { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.fb .fbb { color: var(--text); }
+.fb .fbt { color: inherit; }
+
+/* Formelkarte */
+.formulas { margin-bottom: var(--space-4); background: var(--subtle); }
+.formulas table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); }
+.formulas th, .formulas td { text-align: left; vertical-align: top; padding: var(--space-2) 0; border-top: 1px solid var(--line-soft); font-size: var(--text-sm); }
+.formulas th { font-weight: 600; width: 38%; padding-right: var(--space-3); color: var(--muted); }
+.formulas td .b { font-size: var(--text-base); }
+.formulas td .m { color: var(--muted); font-size: var(--text-sm); }
+
+/* Ergebnis */
+.summary .sumh { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-2xl); }
+.bigstars { font-size: var(--text-3xl); letter-spacing: 6px; color: var(--accent-text); line-height: 1; margin-bottom: var(--space-3); }
+.lead2 { font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.gain { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-2); }
+.gain .b { font-size: var(--text-xl); color: var(--accent-text); }
+.summary .fb { margin-top: var(--space-4); }
+.miss { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 2px solid var(--line); }
+.miss ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); }
+.miss li { margin: 2px 0; }
+
+@media (min-width: 560px) {
+  .st { grid-template-columns: 44px 1fr auto; grid-template-areas: "num body act"; align-items: center; }
+  .st > .btn, .st > .lock { width: auto; min-width: 130px; }
+  .review { grid-template-columns: 1fr auto; align-items: center; }
+  .review > .btn { width: auto; min-width: 150px; }
+  .top h1 { font-size: 3.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { .xpbar > div { transition: none; } .btn:active { transform: none; } }
+
+/* ===== Erweiterung: Lernteil, Simulationen, Challenge, Animationen ===== */
+.btn:disabled { opacity: .4; cursor: default; }
+.xpbar > div { transition: width .9s cubic-bezier(.3,.8,.3,1); }
+.xpbar.light > div { transition: width .35s ease; }
+.acts { grid-area: act; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.acts .btn { width: 100%; padding: 0 var(--space-3); }
+
+/* Lektion */
+.lh { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); line-height: 1.2; margin-bottom: var(--space-3); }
+.lbody p, .lbody ul { margin: 0 0 12px; }
+.lbody ul { padding-left: 22px; }
+.lbody li { margin: 4px 0; }
+.lcard h3.q { margin-top: 20px; }
+.dots { display: flex; gap: 6px; margin: 12px 0; }
+.dot { flex: 1; height: 8px; border-radius: 4px; background: var(--bar-track); transition: background .3s; }
+.dot.on { background: var(--bar-fill); }
+.navrow { display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-3); margin-top: var(--space-4); }
+.simhost { margin-top: var(--space-2); }
+.merk { display: flex; gap: var(--space-3); align-items: flex-start; border: 2px solid var(--primary); background: var(--accent-bg); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0; color: var(--text); }
+.mk { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); }
+.merk.warn { border-color: var(--warn); background: var(--warn-bg); }
+.merk.warn .mk { background: var(--warn); color: var(--warn-bg); }
+.tri { width: 190px; margin: 12px auto; text-align: center; font-size: var(--text-xl); font-weight: 700; }
+.tri-top { border: 2px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; padding: 8px; background: var(--accent-bg); }
+.tri-row { display: grid; grid-template-columns: 1fr 1fr; }
+.tri-row > div { border: 2px solid var(--line); padding: 8px; }
+.tri-row > div:first-child { border-radius: 0 0 0 8px; border-right-width: 1px; }
+.tri-row > div:last-child { border-radius: 0 0 8px 0; border-left-width: 1px; }
+.plate { border: 3px double var(--line); border-radius: 6px; padding: 12px; text-align: center; margin: 8px 0 16px; background: var(--subtle); line-height: 1.8; }
+
+/* Simulationen */
+.sim { border: 2px solid var(--line-soft); border-radius: var(--radius-md); padding: var(--space-3); background: var(--subtle); }
+.sl { display: block; margin-top: var(--space-3); }
+.sll { display: block; font-weight: 600; font-size: var(--text-sm); margin-bottom: 2px; }
+input[type=range] { width: 100%; height: 36px; margin: 0; accent-color: var(--primary); }
+.readout { font-size: var(--text-sm); line-height: 1.7; background: var(--surface); border: 2px solid var(--line-soft); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-3); }
+.readout.mono, p.readout.mono { font-family: var(--font-mono); }
+.hubvis { display: flex; gap: var(--space-4); align-items: flex-end; }
+.hubvis .readout { flex: 1; margin-top: 0; min-width: 0; }
+.rail { position: relative; width: 110px; height: 190px; flex: none; border-left: 3px solid var(--line); border-bottom: 3px solid var(--line); }
+.rl { position: absolute; left: 8px; font-size: var(--text-xs); color: var(--muted); }
+.rl.top { top: 0; } .rl.bot { bottom: 0; }
+.wtbox { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 0; height: 34px; border-radius: 6px; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: transform .7s cubic-bezier(.3,.8,.3,1), width .3s; }
+.seg3 { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.seg3 .btn.on, .chips .btn.on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.brow { display: grid; grid-template-columns: 4.5rem 1fr 4.8rem; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
+.bname { font-size: var(--text-sm); font-weight: 600; }
+.btrack { display: block; height: 16px; background: var(--bar-track); border-radius: 8px; overflow: hidden; }
+.bfill { display: block; height: 100%; background: var(--bar-fill); border-radius: 8px; transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.bval { font-size: var(--text-xs); text-align: right; }
+.lanes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.lane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.trk { position: relative; height: 150px; border: 2px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.trk i { display: block; position: absolute; left: 0; right: 0; height: 2px; background: var(--line-soft); }
+.trk i:nth-child(1) { bottom: 28px; } .trk i:nth-child(2) { bottom: 56px; } .trk i:nth-child(3) { bottom: 84px; } .trk i:nth-child(4) { bottom: 112px; } .trk i:nth-child(5) { bottom: 140px; }
+.run { position: absolute; left: 50%; bottom: 4px; width: 22px; height: 22px; margin-left: -11px; border-radius: 6px; background: var(--primary); }
+.lname { font-weight: 700; }
+.lpl { min-height: 2.7em; }
+.srow { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n v" "t t"; gap: 6px var(--space-2); align-items: center; width: 100%; padding: 10px 12px; margin: 6px 0; border: 2px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.srow .bname { grid-area: n; } .srow .bval { grid-area: v; } .srow .btrack { grid-area: t; }
+.srow.on { border-color: var(--line); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+.trio > div { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-md); padding: 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trio .k { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--muted); }
+.trio b { font-size: var(--text-md); overflow-wrap: anywhere; }
+.puivis { display: flex; gap: var(--space-4); align-items: flex-end; }
+.areabox { position: relative; width: 170px; height: 170px; flex: none; border-left: 3px solid var(--line); border-bottom: 3px solid var(--line); }
+.area { position: absolute; left: 0; bottom: 0; width: 0; height: 0; background: var(--accent-bg); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--accent-text); font-weight: 700; transition: width .4s ease, height .4s ease; overflow: hidden; }
+.lampwrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lamp { width: 64px; height: 64px; border-radius: 50%; background: #ffdc4c; border: 3px solid var(--line); transition: opacity .4s; }
+.meterbox { display: flex; align-items: baseline; gap: var(--space-2); background: var(--header-bg); color: var(--header-text); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); }
+.mdisp { font-size: var(--text-2xl); font-weight: 700; letter-spacing: .04em; }
+.mu { color: var(--header-muted); }
+.mcost { margin: var(--space-2) 0 0; }
+.verdict { font-weight: 700; margin-top: 10px; padding: 10px 12px; border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--accent-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.stack { display: flex; height: 40px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid var(--line); background: var(--surface); }
+.sn { background: var(--bar-fill); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sw { background: var(--line-soft); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.stlab { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); margin: var(--space-2) 0; }
+
+/* Challenge */
+.chal { background: var(--subtle); }
+.chal h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; margin: 4px 0 6px; }
+.chrow { margin-top: var(--space-3); }
+.chrow .numin { font-size: var(--text-lg); min-height: 52px; text-transform: uppercase; }
+.errtxt { color: var(--bad); font-weight: 600; font-size: var(--text-sm); margin-top: 4px; }
+.chlist { margin: var(--space-3) 0 0; padding-left: 20px; font-size: var(--text-sm); }
+.nickrow { margin-top: var(--space-3); display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.resline { border: 2px dashed var(--line); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0 var(--space-2); font-size: var(--text-sm); overflow-wrap: anywhere; user-select: all; }
+
+/* Animationen */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes slideR { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes slideL { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { opacity: 0; transform: scale(.94); } 60% { transform: scale(1.02); } 100% { opacity: 1; transform: none; } }
+@keyframes shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.025); } 100% { transform: scale(1); } }
+@keyframes starin { 0% { opacity: 0; transform: scale(.2) rotate(-40deg); } 70% { transform: scale(1.25) rotate(8deg); } 100% { opacity: 1; transform: none; } }
+@keyframes fly { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
+.view.enter { animation: rise .35s both; }
+.view.enter .path > * { animation: rise .45s both; animation-delay: calc(var(--i, 0) * 70ms); }
+.lcard.fromR { animation: slideR .35s both; }
+.lcard.fromL { animation: slideL .35s both; }
+.fb { animation: pop .3s both; }
+.opt.bad { animation: shake .45s; }
+.opt.good { animation: pulse .5s; }
+.numin.err { border-color: var(--bad); animation: shake .45s; }
+.bigstars span { display: inline-block; color: var(--line-soft); animation: starin .5s var(--d, 0ms) both; }
+.bigstars span.on { color: var(--accent-text); }
+.summary .card { position: relative; overflow: hidden; }
+.confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti span { position: absolute; left: 50%; top: 30%; width: 9px; height: 14px; border-radius: 2px; animation: fly 1.3s ease-out both; }
+.view.noanim *, .view.noanim { animation: none !important; }
+@media (min-width: 560px) {
+  .acts { grid-template-columns: auto auto; }
+  .acts .btn { min-width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Klassenwertung */
+.clsc { background: var(--subtle); }
+.clsc h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; margin: 4px 0 8px; }
+.clsc p { margin-top: 6px; }
+.board { list-style: none; margin: var(--space-2) 0; padding: 0; }
+.board li { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: var(--space-2); align-items: center; padding: 10px 12px; border: 2px solid var(--line-soft); border-radius: var(--radius-md); margin: 6px 0; background: var(--surface); font-size: var(--text-base); }
+.board li.me { border-color: var(--line); background: var(--accent-bg); font-weight: 700; }
+.board li.gap { display: block; text-align: center; border: none; background: none; padding: 0; color: var(--muted); }
+.board .rk { font-weight: 700; color: var(--accent-text); }
+.board .nm { min-width: 0; overflow-wrap: anywhere; }
+.goal { margin-top: var(--space-3); }
+.btnrow { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.chboard { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 2px solid var(--line); }
+
+/* ===================== Jugendlicher Look ===================== */
+body { font-weight: 500; }
+h1, h2, h3, .top h1, .row h2, .sumh, .lh, .st h3, .review h3, .clsc h3, .chal h3 { font-family: var(--font-display); letter-spacing: 0; }
+.q { font-family: var(--font-body); font-weight: 800; }
+.xpbar { height: 16px; border-radius: 8px; }
+.top .xpbar { border: 3px solid var(--header-line); background: #150a3c; }
+.xpbar > div, .top .xpbar > div { background: var(--xp); }
+.xpbar.light { height: 14px; border: 3px solid var(--line); background: var(--bar-track); }
+.xpbar.light > div { background: var(--sc, var(--bar-fill)); }
+.xpbar > div { position: relative; overflow: hidden; border-radius: 6px; }
+.xpbar > div::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); transform: translateX(-100%); animation: shine 2.4s ease-in-out infinite; }
+@keyframes shine { to { transform: translateX(100%); } }
+
+/* Karten und Knöpfe im Sticker-Stil */
+.card { border-width: 3px; border-radius: var(--radius-md); box-shadow: 0 5px 0 var(--line); }
+.btn { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--line); font-weight: 800; transition: transform .08s ease, box-shadow .08s ease, filter .15s; }
+@media (hover: hover) { .btn:hover { filter: brightness(1.06); } }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.btn.sm { box-shadow: 0 3px 0 var(--line); }
+.btn:disabled { box-shadow: none; transform: none; }
+.btn-primary { border-color: var(--line); }
+.btn.nudge { animation: nudge 1.7s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { box-shadow: 0 4px 0 var(--line), 0 0 0 0 var(--pop-yellow); } 50% { box-shadow: 0 4px 0 var(--line), 0 0 0 9px rgba(254,216,53,0); } }
+.seg3 .btn.on, .chips .btn.on { border-color: var(--line); }
+.tag { color: var(--accent-text); }
+.tag.inv { color: var(--header-muted); }
+
+/* Kopfbereich */
+.top { position: relative; overflow: hidden; border-bottom: 4px solid var(--line);
+  background: radial-gradient(circle at 88% 18%, rgba(165,0,145,.55), transparent 42%), radial-gradient(circle at 6% 92%, rgba(0,131,199,.5), transparent 46%), var(--header-bg); }
+.top > * { position: relative; z-index: 1; }
+.top > .spark { position: absolute; z-index: 0; max-width: none; margin: 0; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%; background: var(--c); opacity: .55; animation: drift var(--t) ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(22px, -26px) scale(1.35); } }
+.hero { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.herotxt { min-width: 0; }
+.top h1 { font-weight: 700; font-size: 3.2rem; line-height: 1; text-shadow: 0 3px 0 #150640; }
+.stat { border: 3px solid var(--header-line); border-radius: 14px; background: rgba(255,255,255,.08); }
+.stat:nth-child(2) .v { color: var(--pop-yellow); }
+.stat .v { font-family: var(--font-display); font-weight: 600; }
+.stat .v.mono { font-family: var(--font-mono); font-weight: 700; }
+.logochip { border: 3px solid var(--line); box-shadow: 0 3px 0 var(--line); }
+.bubble { display: none; margin-top: var(--space-2); background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); border-radius: 14px; padding: 8px 12px; font-weight: 800; font-size: var(--text-sm); }
+.bubble.show { display: inline-block; animation: pop .35s both; }
+.wbtn { appearance: none; background: none; border: 0; padding: 4px; cursor: pointer; flex: none; }
+
+/* Stationen */
+.st .num { width: 50px; height: 50px; border-radius: 14px; background: var(--sc); color: var(--ink); border: 3px solid var(--line); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); box-shadow: 0 3px 0 var(--line); }
+.st { grid-template-columns: 50px 1fr; }
+.seg { height: 10px; border-radius: 5px; }
+.seg.on { background: var(--sc, var(--bar-fill)); }
+.sub { color: var(--accent-text); font-weight: 700; }
+.stars { font-size: var(--text-xl); color: var(--pop-yellow); -webkit-text-stroke: 1.5px var(--line); letter-spacing: 2px; }
+.st.locked { box-shadow: none; }
+.st.locked .num { background: var(--line-soft); box-shadow: none; }
+.review { background: var(--accent-bg); }
+.intro { background: var(--pop-yellow); color: var(--ink); margin-bottom: var(--space-4); }
+.intro .tag { color: var(--ink); }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin: var(--space-3) 0; }
+.step3 { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; background: var(--surface); color: var(--text); border: 3px solid var(--line); border-radius: 14px; padding: 10px 6px; }
+.step3 b { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; }
+.step3 span { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); }
+.step3 small { font-size: var(--text-xs); color: var(--muted); line-height: 1.25; }
+.intro .btn { color: var(--text); }
+
+/* Aufgaben und Lektionen */
+.qcard { border-top: 12px solid var(--sc, var(--primary)); }
+.round .qcard { margin-top: 38px; }
+.opt { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--line-soft); transition: transform .1s, box-shadow .1s, background .15s; }
+@media (hover: hover) { .opt:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 var(--line-soft); } }
+.opt .ltr { background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); }
+.opt.good, .opt.bad { box-shadow: 0 4px 0 currentColor; }
+.opt.good .ltr { background: var(--good); color: var(--good-bg); }
+.opt.bad .ltr { background: var(--bad); color: var(--bad-bg); }
+.numin { border-width: 3px; border-radius: 14px; }
+.fb { border-width: 3px; border-radius: 14px; position: relative; }
+.fbx { margin-top: var(--space-3); }
+.dot { height: 10px; border-radius: 5px; }
+.dot.on { background: var(--sc, var(--bar-fill)); }
+.merk { border-width: 3px; border-radius: 14px; }
+.mk { background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); }
+.merk.warn .mk { background: var(--pop-pink); color: var(--ink); }
+.goals { background: var(--accent-bg); border: 3px solid var(--line); border-radius: 14px; padding: var(--space-3); margin-bottom: var(--space-3); }
+.goals ul { margin: var(--space-1) 0 0; padding-left: 20px; }
+.worked { border: 3px solid var(--line); border-radius: 14px; background: var(--subtle); padding: var(--space-3); margin: var(--space-3) 0; }
+.wgiven { font-weight: 800; margin-bottom: var(--space-2); }
+.wsteps { list-style: none; margin: 0 0 var(--space-3); padding: 0; counter-reset: w; }
+.wsteps li { counter-increment: w; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 2px dashed var(--line-soft); max-height: 240px; overflow: hidden; transition: opacity .45s ease, max-height .55s ease, transform .45s ease, padding .45s ease; }
+.wsteps li::before { content: counter(w); width: 30px; height: 30px; border-radius: 50%; background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.wsteps li.hid { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; transform: translateY(12px); border-color: transparent; }
+.wt { font-weight: 800; }
+.wm { font-size: var(--text-sm); margin-top: 2px; overflow-wrap: anywhere; }
+.bfill, .sn { background: var(--sc, var(--bar-fill)); }
+.run, .wt2 { background: var(--sc, var(--primary)); }
+.wt { color: inherit; }
+.sim .wtbox, .rail .wtbox { background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); }
+.sim { border-width: 3px; border-radius: 14px; }
+.readout { border-width: 3px; }
+.xppop { position: absolute; right: 14px; top: -18px; background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); border-radius: 999px; padding: 2px 12px; font-family: var(--font-display); font-weight: 700; animation: xpfloat 1.3s ease-out both; }
+@keyframes xpfloat { 0% { opacity: 0; transform: translateY(18px) scale(.5); } 30% { opacity: 1; transform: translateY(-8px) scale(1.15); } 100% { opacity: 1; transform: translateY(-4px) scale(1); } }
+.bigstars span.on { color: var(--pop-yellow); -webkit-text-stroke: 2px var(--line); }
+.bigstars span { -webkit-text-stroke: 2px var(--line-soft); }
+.sumw { position: absolute; right: 12px; top: 8px; }
+.summary .card { padding-right: 96px; }
+.board li.me { background: var(--pop-yellow); color: var(--ink); }
+.board li.me .rk { color: var(--ink); }
+.view.enter .qcard { animation: bounceIn .55s both; }
+.view.enter .opts .opt { animation: rise .4s both; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+@keyframes bounceIn { 0% { opacity: 0; transform: translateY(26px) scale(.96); } 60% { opacity: 1; transform: translateY(-5px) scale(1.01); } 100% { opacity: 1; transform: none; } }
+
+/* Maskottchen Watti: eine kleine Batterie, die sich mit deinen Punkten füllt */
+.watti { --w: 64px; position: relative; width: var(--w); display: flex; flex-direction: column; align-items: center; transform-origin: 50% 100%; animation: idle 3.4s ease-in-out infinite; }
+.watti.big { --w: 78px; }
+.watti.mini { --w: 46px; position: absolute; right: 16px; top: calc(var(--w) * -1.42); }
+.watti .cap { width: calc(var(--w) * .34); height: calc(var(--w) * .11); background: var(--line); border-radius: 4px 4px 0 0; }
+.watti .body { position: relative; width: var(--w); height: calc(var(--w) * 1.3); border: 3px solid var(--line); border-radius: calc(var(--w) * .26); background: #f3f4ff; overflow: hidden; box-shadow: 0 4px 0 var(--line); }
+.watti .fill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--lvl); background: var(--pop-yellow); transition: height 1s cubic-bezier(.3, .8, .3, 1); }
+.watti .fill::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; height: 3px; background: rgba(31,23,74,.35); }
+.watti .face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--w) * .1); }
+.watti .eyes { display: flex; gap: calc(var(--w) * .2); }
+.watti .eye { display: block; width: calc(var(--w) * .13); height: calc(var(--w) * .19); background: var(--ink); border-radius: 50%; animation: blink 4.6s infinite; }
+.watti .mouth { display: block; width: calc(var(--w) * .3); height: calc(var(--w) * .14); border: 3px solid var(--ink); border-top: none; border-radius: 0 0 calc(var(--w) * .3) calc(var(--w) * .3); }
+.watti[data-mood="cheer"] .mouth { height: calc(var(--w) * .2); background: var(--ink); }
+.watti[data-mood="sad"] .mouth { border: 3px solid var(--ink); border-bottom: none; border-radius: calc(var(--w) * .3) calc(var(--w) * .3) 0 0; margin-top: calc(var(--w) * .06); }
+.watti[data-mood="think"] .mouth { border: 0; border-bottom: 3px solid var(--ink); border-radius: 0; width: calc(var(--w) * .2); height: 0; }
+.watti[data-mood="cheer"] { animation: hop .65s ease-out 2; }
+.watti[data-mood="sad"] { animation: wobble .7s ease-in-out; }
+.watti.hop { animation: hop .65s ease-out; }
+@keyframes idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes hop { 0% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-24px) scale(.94, 1.1); } 62% { transform: translateY(0) scale(1.1, .9); } 100% { transform: none; } }
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+@media (max-width: 380px) { .top h1 { font-size: 2.6rem; } .watti.big { --w: 64px; } }
+
+/* QR-Lernstand und Prüf-App */
+.txtin { font-family: var(--font-body); font-weight: 700; font-size: var(--text-md); text-transform: none; }
+.qrbox { background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 10px; margin: var(--space-3) auto; max-width: 340px; }
+.qrbox svg { display: block; width: 100%; height: auto; }
+.qrscreen .card { padding-right: var(--space-4); }
+.countdown { text-align: center; font-weight: 800; margin: var(--space-2) 0 var(--space-3); }
+.qrc { background: var(--subtle); }
+.qrc h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); margin: 4px 0 6px; }
+.tpage .card { margin-bottom: var(--space-4); }
+.thead { margin-bottom: var(--space-4); }
+.thead h1 { font-family: var(--font-display); font-size: var(--text-2xl); margin: 4px 0 6px; }
+.tpage h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); margin: 4px 0 8px; }
+.cam { width: 100%; max-height: 340px; border: 3px solid var(--line); border-radius: 14px; background: #000; object-fit: cover; margin-bottom: var(--space-3); }
+.det { margin-top: var(--space-3); }
+.det summary { cursor: pointer; font-weight: 800; padding: 6px 0; }
+.manual { width: 100%; border: 3px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); padding: 10px; font-size: var(--text-sm); }
+.rhead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.rbadge { font-weight: 800; padding: 4px 14px; border: 3px solid var(--line); border-radius: 999px; background: var(--subtle); }
+.rbadge.good { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+.rbadge.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.rbadge.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.flags { margin: var(--space-3) 0 0; padding-left: 20px; }
+.flags li { margin: 4px 0; font-weight: 700; }
+.tbl { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.tbl th, .tbl td { text-align: left; padding: 8px 6px; border-top: 2px solid var(--line-soft); vertical-align: top; }
+.tbl thead th { border-top: none; font-size: var(--text-xs); letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--muted); }
+.rtbl th { width: 42%; color: var(--muted); font-weight: 700; }
+.tscroll { overflow-x: auto; }
+.tg { color: var(--good); font-weight: 800; } .tw { color: var(--warn); font-weight: 800; }
+#resultcard.flash { animation: pop .4s both; }
+
+/* Motor-Simulationen */
+@keyframes spin { to { transform: rotate(360deg); } }
+.chk { display: flex; align-items: center; gap: 8px; margin-top: var(--space-3); font-weight: 800; }
+.chk input { width: 22px; height: 22px; accent-color: var(--primary); }
+.magvis { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: var(--space-3); }
+.nail { position: relative; width: 210px; height: 50px; }
+.core { position: absolute; left: 6px; right: 6px; top: 15px; height: 20px; border-radius: 10px; background: var(--muted); border: 3px solid var(--line); transition: opacity .3s; }
+.coil { position: absolute; left: 34px; right: 34px; top: 3px; height: 44px; border: 3px solid var(--line); border-radius: 8px; background: linear-gradient(90deg, var(--sc, var(--primary)) 0 4px, transparent 4px) 0 0 / calc(100% / var(--turns, 4)) 100%; transition: background-size .3s; }
+.clips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 230px; min-height: 28px; }
+.clip { display: block; width: 12px; height: 22px; border: 3px solid var(--line-soft); border-radius: 6px; opacity: .3; transform: translateY(-10px); transition: opacity .25s, transform .35s; }
+.clip.on { opacity: 1; border-color: var(--line); transform: none; }
+.motorvis { display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3); }
+.pole { width: 54px; height: 100px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: var(--text-lg); border: 3px solid var(--line); color: var(--ink); }
+.pole.n { background: var(--pop-pink); border-radius: 14px 0 0 14px; }
+.pole.s { background: var(--pop-cyan); border-radius: 0 14px 14px 0; }
+.rotorbox { position: relative; width: 120px; height: 100px; border-top: 3px solid var(--line); border-bottom: 3px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.rotor { width: 90px; height: 22px; border-radius: 11px; background: var(--sc, var(--primary)); border: 3px solid var(--line); animation: spin 1.2s linear infinite; }
+.axis { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.genvis { display: flex; align-items: center; justify-content: space-around; margin-bottom: var(--space-3); }
+.crank { position: relative; width: 100px; height: 100px; border: 3px solid var(--line); border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.crankarm { width: 76px; height: 14px; border-radius: 7px; background: var(--sc, var(--primary)); border: 3px solid var(--line); animation: spin 1s linear infinite; }
+.battvis { display: flex; flex-direction: column-reverse; align-items: center; margin-bottom: var(--space-3); }
+.batt { width: 76px; height: 110px; border: 3px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); display: flex; align-items: flex-end; }
+.battfill { width: 100%; height: 0; background: var(--sc, var(--primary)); transition: height .8s cubic-bezier(.3, .8, .3, 1); }
+.battcap { width: 28px; height: 9px; background: var(--line); border-radius: 4px 4px 0 0; }
+.gearvis { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: var(--space-3); min-height: 180px; }
+.gearbox { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 90px; }
+.gear { border-radius: 50%; border: 3px solid var(--line); background: repeating-conic-gradient(var(--sc, var(--primary)) 0 10deg, var(--surface) 10deg 20deg); animation: spin 8s linear infinite; transition: width .3s, height .3s; }
+.gear.g2 { animation-direction: reverse; background: repeating-conic-gradient(var(--st-5) 0 10deg, var(--surface) 10deg 20deg); }
+.gl { font-size: var(--text-xs); font-weight: 800; }
+
+/* Lernlandkarte */
+.hubmain > .small { margin-bottom: var(--space-3); }
+.hubmain .chips { margin-bottom: var(--space-4); }
+.top .stack { margin-top: var(--space-4); border-color: var(--header-line); background: #150a3c; height: 18px; }
+.sg { background: var(--pop-green); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sy { background: var(--pop-yellow); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sred { background: var(--pop-pink); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.bk { padding: 0; border-top: 12px solid var(--sc); position: relative; overflow: hidden; }
+.bk[hidden], .kp[hidden] { display: none !important; }
+.bk > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 46px 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-4); }
+.bk > summary::-webkit-details-marker { display: none; }
+.bk > summary::after { content: none; }
+.bnum { width: 46px; height: 46px; border-radius: 14px; background: var(--sc); color: var(--ink); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--line); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); }
+.btxt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.btitle { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); line-height: 1.2; }
+.bcount { font-weight: 700; font-size: var(--text-sm); }
+.bsegs { display: flex; gap: 4px; margin-top: 2px; }
+.bsegs i { display: block; height: 9px; flex: 1; max-width: 46px; border-radius: 5px; background: var(--bar-track); }
+.bsegs i.g { background: var(--pop-green); } .bsegs i.y { background: var(--pop-yellow); } .bsegs i.r { background: var(--pop-pink); }
+.bk[open] > summary { border-bottom: 3px solid var(--line); }
+.kplist { list-style: none; margin: 0; padding: 0; }
+.kp { padding: var(--space-4); border-top: 2px dashed var(--line-soft); }
+.kp:first-child { border-top: none; }
+.kptop { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.kcode { font-weight: 800; background: var(--sc); color: var(--ink); border: 3px solid var(--line); border-radius: 8px; padding: 1px 8px; font-size: var(--text-sm); }
+.ktags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ktag { font-size: var(--text-xs); font-weight: 700; color: var(--muted); border: 2px solid var(--line-soft); border-radius: 999px; padding: 1px 8px; }
+.ktext { font-weight: 700; font-size: var(--text-md); line-height: 1.35; margin: 0 0 var(--space-2); }
+.kapps { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.appchip { font-size: var(--text-sm); font-weight: 800; color: var(--text); background: var(--accent-bg); border: 3px solid var(--line); border-radius: 999px; padding: 4px 12px; text-decoration: none; box-shadow: 0 3px 0 var(--line); }
+@media (hover: hover) { a.appchip:hover { filter: brightness(1.06); } }
+.appchip.plan { background: var(--subtle); border-style: dashed; box-shadow: none; font-weight: 700; color: var(--muted); }
+.amps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.amp { appearance: none; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 6px; border: 3px solid var(--line-soft); border-radius: 14px; background: var(--surface); color: var(--text); font: 800 var(--text-sm)/1.1 var(--font-body); cursor: pointer; transition: transform .1s, background .15s, border-color .15s; }
+@media (hover: hover) { .amp:hover { border-color: var(--line); } }
+.amp:active { transform: translateY(2px); }
+.dotc { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--line); flex: none; }
+.amp.r .dotc { background: var(--pop-pink); } .amp.y .dotc { background: var(--pop-yellow); } .amp.g .dotc { background: var(--pop-green); }
+.amp[aria-pressed="true"] { border-color: var(--line); box-shadow: 0 3px 0 var(--line); font-weight: 900; }
+.amp.r[aria-pressed="true"] { background: var(--bad-bg); } .amp.y[aria-pressed="true"] { background: var(--warn-bg); } .amp.g[aria-pressed="true"] { background: var(--good-bg); }
+.lp { margin-top: var(--space-2); }
+.lp summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
+.lp p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+.chips .btn.on { background: var(--primary); color: var(--on-primary); }
+@media (max-width: 380px) { .amp { font-size: var(--text-xs); } .dotc { display: none; } }
+
+/* Bewegungen: Diagramme, Tabellen, Wagen */
+.chart { width: 100%; max-width: 440px; height: auto; display: block; margin: var(--space-2) auto var(--space-3); }
+.chart .gr { stroke: var(--line-soft); stroke-width: 1; }
+.chart .ax { stroke: var(--line); stroke-width: 2.5; stroke-linecap: round; }
+.chart .tk { fill: var(--muted); font: 700 11px var(--font-body); }
+.chart .lb { fill: var(--text); font: 800 12px var(--font-body); }
+.chart .cv { fill: none; stroke: var(--sc, var(--primary)); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ln2 { stroke: var(--pop-pink); }
+.chart .pt { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 2.5; }
+.chart .fit { stroke: var(--text); stroke-width: 2.5; stroke-dasharray: 7 5; }
+.chart .mk { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 3; }
+.opt svg.mini { display: block; width: 100%; max-width: 160px; height: auto; }
+.mini .ax { stroke: var(--text); stroke-width: 2.5; stroke-linecap: round; }
+.mini .cv { fill: none; stroke: var(--sc, var(--primary)); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+.opt:has(svg.mini) { justify-content: flex-start; align-items: center; }
+.dtab { border-collapse: collapse; margin: 0 0 var(--space-3); font-size: var(--text-base); max-width: 100%; }
+.dtab th, .dtab td { border: 2px solid var(--line); padding: 4px 10px; text-align: center; font-weight: 700; }
+.dtab th { background: var(--accent-bg); text-align: left; font-size: var(--text-sm); }
+.track { position: relative; height: 54px; margin: var(--space-4) 44px var(--space-5) 6px; border-bottom: 4px solid var(--line); }
+.car { position: absolute; bottom: 4px; left: 0; width: 36px; height: 22px; margin-left: -4px; background: var(--sc, var(--primary)); border: 3px solid var(--line); border-radius: 8px; }
+.car.runner { border-radius: 50% 50% 8px 8px; width: 26px; height: 30px; }
+.marks { position: absolute; left: 0; right: 0; bottom: -4px; height: 0; }
+.marks i { position: absolute; bottom: -22px; width: 22px; margin-left: -11px; text-align: center; font: 800 11px var(--font-mono); font-style: normal; color: var(--text); }
+.marks i::before { content: ""; position: absolute; left: 50%; top: -14px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--pop-yellow); border: 2px solid var(--line); }
+.lg { display: inline-block; min-width: 24px; text-align: center; font-weight: 800; border: 2px solid var(--line); border-radius: 6px; color: var(--ink); }
+.lg.a { background: var(--primary); color: var(--on-primary); } .lg.b { background: var(--pop-pink); }
+
+/* 7_1 Naturwissenschaften: Sortierspiel, Draht, Mikroskop, Zellen */
+.top h1.long { font-size: 2.3rem; line-height: 1.08; overflow-wrap: anywhere; }
+.gcard { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.25; margin: 0 0 var(--space-3); }
+.gbtns { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.gbtns .btn.on { background: var(--primary); color: var(--on-primary); }
+.wirevis { display: flex; align-items: center; gap: 6px; margin: var(--space-3) 0; }
+.batt2 { flex: none; width: 44px; height: 30px; border: 3px solid var(--line); border-radius: 6px; background: var(--pop-yellow); }
+.wire { height: 12px; border: 2px solid var(--line); border-radius: 6px; transition: width .35s ease, background .35s ease; max-width: 100%; }
+.field { width: 100%; max-width: 250px; aspect-ratio: 1; margin: var(--space-3) auto; border: 4px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--surface); }
+.cells { width: 100%; height: 100%; background-color: var(--accent-bg); background-image: linear-gradient(var(--line) 2px, transparent 2px), linear-gradient(90deg, var(--line) 2px, transparent 2px); background-size: var(--cs, 20px) var(--cs, 20px); background-position: center; transition: background-size .45s ease; }
+.cellbox { position: relative; width: 100%; max-width: 300px; height: 170px; margin: var(--space-3) auto; border: 4px solid var(--line); border-radius: 8px; background: var(--accent-bg); }
+.cellbox.onion { background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.cdots { position: absolute; inset: 14px; }
+.cdots i { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--pop-green); border: 3px solid var(--line); }
+.proto { background: var(--pop-pink); border: 3px solid var(--line); border-radius: 14px; transition: width .7s ease, height .7s ease; }
+.gbtns .btn.good { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+.gbtns .btn.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.sim > .btn.block { margin-top: var(--space-3); }
+
+/* Touch: schnelle, zuverlässige Tipps */
+button, a, [data-act], input, label, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* Versteckte Elemente bleiben versteckt, auch wenn ihr Stil eine Anzeige vorgibt */
+[hidden] { display: none !important; }
+
+/* Titel und Maskottchen: nichts überlappt, nichts fängt Tipps ab */
+.top h1 { font-size: clamp(1.9rem, 8vw, 3.2rem); overflow-wrap: anywhere; }
+.top h1.long { font-size: clamp(1.6rem, 6.6vw, 2.3rem); }
+.herotxt { flex: 1; min-width: 0; }
+.watti.mini, .sumw { pointer-events: none; }
+.round .qcard { margin-top: 58px; }
+
+/* 7_5 Energie: Würfel, Ketten, Wärmetransport */
+.cubes { display: flex; gap: 6px; flex-wrap: wrap; margin: var(--space-3) 0; }
+.cube { display: block; width: 30px; height: 30px; border: 3px solid var(--line); border-radius: 7px; transition: background .45s ease; }
+.cube.lage { background: var(--st-5); } .cube.bew { background: var(--pop-yellow); } .cube.therm { background: var(--pop-pink); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-2); }
+.lgd { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-radius: 4px; }
+.lgd.lage { background: var(--st-5); } .lgd.bew { background: var(--pop-yellow); } .lgd.therm { background: var(--pop-pink); }
+.chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: var(--space-3) 0; }
+.cbox { border: 3px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--accent-bg); font-weight: 800; font-size: var(--text-sm); max-width: 120px; text-align: center; }
+.cbox.w { background: var(--pop-yellow); color: var(--ink); }
+.carrow { font-size: 1.4rem; font-weight: 800; }
+.cend { flex: 1; min-width: 150px; }
+.bfill.th { background: var(--pop-pink); }
+.wdemo { display: flex; align-items: center; gap: 8px; height: 120px; margin: var(--space-3) 0; }
+.hot, .cold { flex: none; width: 54px; height: 96px; border: 3px solid var(--line); border-radius: 12px; }
+.hot { background: var(--pop-pink); } .cold { background: var(--pop-cyan); }
+.ws { flex: 1; height: 100%; display: flex; align-items: center; justify-content: space-around; overflow: hidden; }
+.ws i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--pop-yellow); border: 2px solid var(--line); }
+.wdemo[data-m="leitung"] .ws i { animation: jig .9s ease-in-out infinite; }
+.wdemo[data-m="stroemung"] .ws i { animation: loopy 2.2s linear infinite; }
+.wdemo[data-m="strahlung"] .ws i { animation: ray 1.4s linear infinite; border-radius: 3px; width: 24px; height: 8px; }
+.ws i:nth-child(1) { animation-delay: 0s; } .ws i:nth-child(2) { animation-delay: .15s; } .ws i:nth-child(3) { animation-delay: .3s; }
+.ws i:nth-child(4) { animation-delay: .45s; } .ws i:nth-child(5) { animation-delay: .6s; } .ws i:nth-child(6) { animation-delay: .75s; }
+@keyframes jig { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+@keyframes loopy { 0% { transform: translate(0, -34px); } 25% { transform: translate(12px, 0); } 50% { transform: translate(0, 34px); } 75% { transform: translate(-12px, 0); } 100% { transform: translate(0, -34px); } }
+@keyframes ray { 0% { transform: translateX(-30px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(30px); opacity: 0; } }
+
+/* 7_7 Chemie: Periodensystem und Fotosynthese */
+.pscroll { overflow-x: auto; padding-bottom: var(--space-2); }
+.pse { border-collapse: separate; border-spacing: 3px; min-width: max-content; }
+.pse td { width: 38px; height: 44px; padding: 0; }
+.el { appearance: none; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; border: 3px solid var(--line); border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink); line-height: 1.05; }
+.el b { font-size: 0.95rem; } .el small { font-size: 0.6rem; font-weight: 700; }
+.el.m { background: var(--pop-cyan); } .el.n { background: var(--pop-yellow); } .el.e { background: var(--pop-pink); } .el.h { background: var(--pop-green); }
+.el.sel { outline: 4px solid var(--primary); outline-offset: 1px; }
+.lgd.m { background: var(--pop-cyan); } .lgd.n { background: var(--pop-yellow); } .lgd.e { background: var(--pop-pink); } .lgd.h { background: var(--pop-green); }
+.plant { position: relative; height: 120px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); overflow: hidden; }
+.plant::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 8px; height: 70px; margin-left: -4px; background: var(--pop-green); border: 2px solid var(--line); border-radius: 4px; }
+.bubbles { position: absolute; inset: 0; }
+.bubbles i { position: absolute; bottom: 24px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); opacity: 0; }
+.bubbles.on i { animation: rise2 var(--bd, 2s) linear infinite; }
+.bubbles i:nth-child(1) { left: 44%; animation-delay: 0s; } .bubbles i:nth-child(2) { left: 48%; animation-delay: .4s; } .bubbles i:nth-child(3) { left: 52%; animation-delay: .9s; }
+.bubbles i:nth-child(4) { left: 56%; animation-delay: 1.3s; } .bubbles i:nth-child(5) { left: 46%; animation-delay: 1.7s; } .bubbles i:nth-child(6) { left: 54%; animation-delay: 2.1s; }
+@keyframes rise2 { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+
+/* 8_1 Stromkreise */
+.circ { display: flex; align-items: center; gap: 4px; margin: var(--space-3) 0; }
+.cbat { flex: none; border: 3px solid var(--line); border-radius: 8px; padding: 10px; background: var(--pop-yellow); color: var(--ink); font-weight: 800; font-size: var(--text-sm); }
+.cwire { flex: 1; height: 10px; border: 2px solid var(--line); border-radius: 5px; background: var(--surface); }
+.cwire.flow { background: repeating-linear-gradient(90deg, var(--pop-yellow) 0 12px, var(--surface) 12px 24px); background-size: 24px 100%; animation: flowx 1s linear infinite; }
+.clamp { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); }
+.clamp.on { background: var(--pop-yellow); box-shadow: 0 0 18px var(--pop-yellow); }
+.lamps { display: flex; gap: 10px; margin: var(--space-3) 0; }
+.lp { display: block; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); }
+.lp.on { background: var(--pop-yellow); }
+.gear { display: inline-block; font-size: 1.3rem; }
+.gear.m, .gear.g { animation: spin 1.4s linear infinite; }
+.gear.g { animation-direction: reverse; }
+@keyframes flowx { to { background-position: 24px 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 7_3 Sinne: Schallwelle, Ohr, Linse, Auge */
+.wave { position: relative; height: 64px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); overflow: hidden; }
+.wave i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--primary); }
+.ohrchain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--space-3) 0; }
+.ostep { border: 3px solid var(--line); border-radius: 10px; padding: 6px 8px; font-weight: 700; font-size: var(--text-sm); background: var(--surface); }
+.ostep.on { background: var(--pop-yellow); color: var(--ink); }
+.lensvg { display: block; width: 100%; max-width: 360px; margin: var(--space-3) auto; }
+.lensvg .ax { stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 4; }
+.lensvg .ray { stroke: var(--pop-pink); stroke-width: 3; fill: none; }
+.lensvg .vray { stroke: var(--pop-pink); stroke-width: 2; stroke-dasharray: 4 4; }
+.lensvg .lens { fill: var(--accent-bg); stroke: var(--line); stroke-width: 3; }
+.lensvg .fp { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 2; }
+.lensvg .eye { fill: var(--surface); stroke: var(--line); stroke-width: 3; }
+.lensvg .ret { stroke: var(--primary); stroke-width: 6; stroke-linecap: round; }
+
+/* Trophäen */
+.trophybar { appearance: none; display: flex; align-items: center; gap: var(--space-3); width: 100%; margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); border: 3px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 4px 0 var(--line); }
+.trophybar .tb { display: flex; flex-direction: column; flex: 1; }
+.trophybar .tb small { color: var(--ink-soft, var(--ink)); }
+.tnew { background: var(--pop-pink); color: var(--ink); border: 2px solid var(--line); border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: var(--text-sm); }
+.ticon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 1.6rem; border: 3px solid var(--line); border-radius: 50%; background: var(--pop-yellow); }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+.trophy { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: var(--space-3); border: 3px solid var(--line); border-radius: 14px; background: var(--surface); }
+.trophy b { font-family: var(--font-display); }
+.trophy small { color: var(--ink); opacity: .85; }
+.trophy.locked { opacity: .65; }
+.trophy.locked .ticon { background: var(--subtle); filter: grayscale(1); }
+.trophy .tdone { font-size: var(--text-sm); font-weight: 800; color: var(--primary); }
+
+/* Schulwertung und Klassenduell */
+.board li .nm small { display: block; font-size: 0.75rem; font-weight: 600; opacity: .8; }
+.clsc .seg3 { margin: var(--space-2) 0; }
+
+/* 8_5 Kräfte: Kraftmesser */
+.spring { display: flex; flex-direction: column; align-items: center; height: 150px; margin: var(--space-3) 0; }
+.sp { width: 16px; border: 2px solid var(--line); border-radius: 8px; background: repeating-linear-gradient(0deg, var(--line) 0 4px, var(--accent-bg) 4px 8px); transition: height .25s ease; }
+.wgt { height: 26px; border: 3px solid var(--line); border-radius: 6px; background: var(--pop-yellow); transition: width .25s ease; }
+.lensvg .rope { stroke: var(--line); stroke-width: 4; }
+.lensvg .knot { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 3; }
+.lensvg .kl { stroke-width: 6; stroke-linecap: round; }
+.lensvg .ka { stroke: var(--pop-pink); } .lensvg .kb { stroke: var(--primary); } .lensvg .kr { stroke: var(--ink); }
+
+/* Startseite mit allen Kapiteln */
+.grp { margin: var(--space-5) 0 var(--space-2); font-family: var(--font-display); }
+.stlist { list-style: none; padding: 0; margin: var(--space-2) 0; }
+.stlink { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); margin: var(--space-2) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.stlink .stn { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 30px; height: 30px; border: 3px solid var(--line); border-radius: 50%; background: var(--sc, var(--primary)); font-weight: 800; }
+.stlink .stt { flex: 1; display: flex; flex-direction: column; }
+.stlink .stt small { opacity: .8; }
+.stlink .sts { white-space: nowrap; font-weight: 800; }
+.planc { opacity: .75; border-style: dashed; }
+.bcnt { margin-left: auto; font-weight: 800; }
+
+/* 8_4 Chemie: Feuer, Gleichungen, Energiediagramm */
+.flamebox { display: flex; justify-content: center; align-items: flex-end; height: 90px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); }
+.flame { width: 44px; height: 64px; margin-bottom: 8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--pop-yellow); border: 3px solid var(--line); opacity: .12; transition: opacity .3s ease; }
+.flame.on { opacity: 1; background: var(--pop-pink); animation: flick .8s ease-in-out infinite alternate; }
+@keyframes flick { from { transform: scale(1, 1); } to { transform: scale(.92, 1.08); } }
+.eq { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: var(--space-3) 0; font-weight: 700; }
+.eq .term { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); }
+.eq .term .btn { min-height: 30px; padding: 2px 8px; }
+.eq .arr { font-size: 1.3rem; }
+.lensvg .eline { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linejoin: round; }
+
+/* 9_1 Optik */
+.lensvg .mirror { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+.lensvg .ray2 { stroke: var(--primary); stroke-width: 3; fill: none; }
+.lensvg .water { fill: var(--accent-bg); stroke: none; }
+.swatch { width: 100%; height: 72px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: rgb(255, 255, 0); }
+
+/* 9_3 Elektronik: LED-Anzeige */
+.ledbox { display: flex; justify-content: center; align-items: center; height: 80px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); }
+.led { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--line); background: var(--subtle); transition: background .25s ease, box-shadow .25s ease; }
+.led.dim { background: var(--pop-yellow); opacity: .55; }
+.led.on { background: var(--pop-yellow); box-shadow: 0 0 22px var(--pop-yellow); }
+.led.dead { background: var(--ink); }
+
+/* 9_5 Genetik: DNA-Stränge */
+.dna { margin: var(--space-3) 0; overflow-x: auto; }
+.dstrang { display: flex; gap: 4px; margin: 4px 0; }
+.base { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--line); border-radius: 8px; font-weight: 800; background: var(--surface); }
+.base.bA { background: var(--pop-yellow); } .base.bT { background: var(--pop-cyan); } .base.bG { background: var(--pop-pink); } .base.bC { background: var(--pop-green); }
+.base.leer { opacity: .55; }
+</style>
+</head>
+<body>
+<div id="app"><noscript><main class="wrap"><p>Diese Lern-App braucht JavaScript.</p></main></noscript></div>
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ---------- Hilfsfunktionen ---------- */
+const G = 10; // Ortsfaktor in N/kg (Annahme: Sek-Standard)
+let RNG = Math.random; // wird für die Challenge kurz durch einen Seed-Generator ersetzt
+const rnd = a => a[Math.floor(RNG() * a.length)];
+function seeded(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  let a = (() => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return (h ^= h >>> 16) >>> 0; })();
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const NICK_A = ['Blitz', 'Funke', 'Turbo', 'Watt', 'Joule', 'Volt', 'Ampere', 'Kilo', 'Dynamo', 'Magnet'];
+const NICK_B = ['Fuchs', 'Adler', 'Luchs', 'Falke', 'Dachs', 'Otter', 'Uhu', 'Igel'];
+const newNick = () => NICK_A[Math.floor(Math.random() * NICK_A.length)] + '-' + NICK_B[Math.floor(Math.random() * NICK_B.length)];
+const shuffle = a => {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(RNG() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+function fmt(n, d) {
+  d = d === undefined ? 3 : d;
+  const f = Math.pow(10, d);
+  n = Math.round(n * f) / f;
+  const neg = n < 0;
+  let [i, fr] = Math.abs(n).toString().split('.');
+  if (i.length > 4) i = i.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
+  return (neg ? '\u2212' : '') + i + (fr ? ',' + fr : '');
+}
+const num = (q, unit, ans, hint, explain, o) =>
+  Object.assign({ type: 'num', q, unit, ans, hint, explain, tolRel: 0.01, tolAbs: 0 }, o || {});
+// MC: options[0] ist die richtige Antwort, gemischt wird beim Anzeigen
+const mc = (q, options, explain) => ({ type: 'mc', q, options, explain });
+
+/* ---------- Inhalt: 8_3 Funktionen des Körpers analysieren, 6 Stationen ----------
+   Station 4 enthält zusätzlich das Unterkapitel 3.7 (sexuell übertragbare Infektionen) nach dem Lehrerkommentar. */
+const r2 = x => Math.round(x * 1000) / 1000;
+const STATIONS = [
+  {
+    id: 'h1', nr: 1, title: 'Gesundheit und Ernährung', sub: 'Hauptnährstoffe und Energie',
+    items: [
+      { id: 'h1-dim', topic: 'Dimensionen der Gesundheit', make() {
+        return mc('Was gehört alles zur Gesundheit?', ['Körperliches, geistiges und soziales Wohlergehen.', 'Nur die Abwesenheit von Krankheit.', 'Nur Sport und Ernährung.', 'Nur das Gewicht.'],
+          'Gesundheit ist mehr als nicht krank zu sein. Dazu gehören das körperliche, das geistige (psychische) und das soziale Wohlergehen.');
+      } },
+      { id: 'h1-schutz', topic: 'Schutz- und Risikofaktoren', make() {
+        return mc('Was ist ein Schutzfaktor für die Gesundheit?', ['Ausreichend Bewegung und Schlaf.', 'Dauerhafter Stress ohne Pausen.', 'Rauchen.', 'Mobbing.'],
+          'Schutzfaktoren unterstützen die Gesundheit, zum Beispiel Bewegung, Schlaf, gute Beziehungen und Verzicht auf Suchtmittel. Risikofaktoren erhöhen die Gefahr für Erkrankungen.');
+      } },
+      { id: 'h1-nahr', topic: 'Hauptnährstoffe', make() {
+        return mc('Welche drei Hauptnährstoffgruppen kennst du?', ['Kohlenhydrate, Fette und Proteine.', 'Vitamine, Salz und Wasser.', 'Zucker, Salz und Pfeffer.', 'Eisen, Kalk und Gold.'],
+          'Kohlenhydrate (zum Beispiel Stärke und Zucker) liefern vor allem Energie. Fette liefern Energie und sind Bausteine. Proteine (Eiweisse) sind vor allem Baustoffe für den Körper.');
+      } },
+      { id: 'h1-energie', topic: 'Energie im Körper', make() {
+        return mc('Welche Formulierung ist fachlich passend?', ['Der Körper benötigt Energie und wandelt sie um, zum Beispiel in Bewegungsenergie und thermische Energie.', 'Der Körper verbraucht Energie, sie ist dann weg.', 'Der Körper braucht Energie und lässt sie verschwinden.', 'Energie wird im Körper aufgegessen.'],
+          'Energie geht nicht verloren. Die mit der Nahrung aufgenommene chemische Energie wird umgewandelt, zum Beispiel in thermische Energie (Körpertemperatur) oder in Bewegungsenergie.');
+      } },
+      { id: 'h1-umsatz', topic: 'Energieumsatz', ext: true, make() {
+        const s = rnd([[7000, 3000], [6500, 2500], [8000, 4000], [6000, 3500], [7500, 2000]]), g = s[0] + s[1];
+        return num(`Der Grundumsatz einer Person beträgt in einem Beispiel ${fmt(s[0])} kJ pro Tag, der Leistungsumsatz ${fmt(s[1])} kJ. Wie gross ist der Gesamtumsatz?`, 'kJ', g, 'Gesamtumsatz = Grundumsatz + Leistungsumsatz', `${fmt(s[0])} kJ + ${fmt(s[1])} kJ = ${fmt(g)} kJ`);
+      } },
+      { id: 'h1-ausgew', topic: 'Ausgewogene Ernährung', make() {
+        return mc('Was gehört zu einer ausgewogenen Ernährung nach der Ernährungspyramide?', ['Viel Gemüse, Obst und Wasser, mässig tierische Produkte und nur wenig Süsses und Fettiges.', 'Fast nur Süsses.', 'Nur Fleisch.', 'Möglichst gar nichts essen.'],
+          'Die Ernährungspyramide zeigt, was du reichlich essen sollst (unten) und was nur sparsam (oben). Es geht um Vielfalt, nicht um Verbote.');
+      } }
+    ]
+  },
+  {
+    id: 'h2', nr: 2, title: 'Nährstoffe nachweisen', sub: 'Experimente mit Lebensmitteln',
+    items: [
+      { id: 'h2-staerke', topic: 'Stärkenachweis', make() {
+        return mc('Womit weist du Stärke nach und welches Ergebnis siehst du?', ['Mit Lugol-Lösung. Sie färbt sich blauviolett.', 'Mit Wasser. Es wird rot.', 'Mit Essig. Es wird blau.', 'Mit Salz. Es sprudelt.'],
+          'Lugol-Lösung ist der Nachweis für Stärke. Ein blauvioletter Farbumschlag zeigt, dass Stärke vorhanden ist.');
+      } },
+      { id: 'h2-zucker', topic: 'Zuckernachweis', make() {
+        return mc('Wie kannst du Traubenzucker in einem Lebensmittel nachweisen?', ['Mit einem Traubenzucker-Teststreifen.', 'Mit einem Thermometer.', 'Mit einem Lineal.', 'Mit einer Waage.'],
+          'Teststreifen für Traubenzucker ändern ihre Farbe, wenn Zucker vorhanden ist. Eine Alternative ist die Fehling-Probe mit rotem Niederschlag.');
+      } },
+      { id: 'h2-kontrolle', topic: 'Kontrollversuch', make() {
+        return mc('Warum machst du bei Nährstoffnachweisen auch einen Versuch mit reinem Wasser?', ['Als Kontrollversuch: Nur so kannst du Farben und Veränderungen vergleichen.', 'Damit der Versuch länger dauert.', 'Weil Wasser immer Stärke enthält.', 'Weil man das so macht, ohne Grund.'],
+          'Der Kontrollversuch zeigt, wie der Nachweis ohne den Nährstoff aussieht. Erst der Vergleich macht ein positives Ergebnis sichtbar.');
+      } },
+      { id: 'h2-aceton', topic: 'Sicherheit mit Aceton', make() {
+        return mc('Aceton ist leicht entzündlich. Wie dampfst du es ab?', ['Auf einer Heizplatte, nicht über der Gasbrennerflamme.', 'Über der offenen Flamme.', 'Gar nicht, man trinkt es.', 'Mit einem Feuerzeug.'],
+          'Weil Aceton leicht entzündlich ist, darf es nie über einer Flamme abgedampft werden. Auf der Heizplatte besteht kein offenes Feuer.');
+      } },
+      { id: 'h2-fett', topic: 'Fettanteil berechnen', make() {
+        const s = rnd([[5, 1.5], [5, 2], [10, 3], [4, 1], [20, 6]]), p = r2(s[1] / s[0] * 100);
+        return num(`Aus ${fmt(s[0])} g Kartoffelchips (Beispiel) werden ${fmt(s[1])} g Fett extrahiert. Wie viel Prozent der Chips sind Fett?`, '%', p, 'Fettanteil = Fett : Probe · 100 %', `${fmt(s[1])} g : ${fmt(s[0])} g · 100 % = ${fmt(p)} %`);
+      } },
+      { id: 'h2-extraktion', topic: 'Extraktion', make() {
+        return mc('Was bedeutet Extrahieren?', ['Einen Stoff mit einem Lösungsmittel aus einem Gemisch herauslösen, zum Beispiel Fett aus Chips mit Aceton.', 'Etwas in Wasser auflösen und wegschütten.', 'Etwas erhitzen, bis es schwarz wird.', 'Etwas filtern, ohne Lösungsmittel.'],
+          'Beim Extrahieren löst ein geeignetes Lösungsmittel einen Stoff aus dem Gemisch. Danach kann man das Lösungsmittel abdampfen und den Stoff untersuchen.');
+      } }
+    ]
+  },
+  {
+    id: 'h3', nr: 3, title: 'Der Weg der Nahrung', sub: 'Verdauung und Stoffwechsel',
+    items: [
+      { id: 'h3-weg', topic: 'Reihenfolge der Verdauungsorgane', make() {
+        return mc('Welche Reihenfolge entspricht dem Weg der Nahrung?', ['Mund, Speiseröhre, Magen, Zwölffingerdarm, Dünndarm, Dickdarm, Mastdarm.', 'Magen, Mund, Dünndarm, Speiseröhre, Dickdarm.', 'Mund, Dünndarm, Speiseröhre, Magen, Dickdarm.', 'Speiseröhre, Mund, Magen, Mastdarm, Dünndarm.'],
+          'Die Verdauung ist ein Zusammenspiel vieler Organe. Sie läuft nicht nur im Magen ab, sondern beginnt schon im Mund.');
+      } },
+      { id: 'h3-speichel', topic: 'Speichel', make() {
+        return mc('Du gibst Speichel zu einer mit Lugol angefärbten Stärkelösung. Was beobachtest du?', ['Die Färbung verschwindet, weil das Enzym im Speichel die Stärke abbaut.', 'Die Lösung wird dunkler.', 'Nichts ändert sich.', 'Die Lösung wird zu Wasser.'],
+          'Im Speichel steckt ein Enzym, das Stärke in kleinere Zucker-Bausteine zerlegt. Darum färbt sich die Lösung nicht mehr blauviolett.');
+      } },
+      { id: 'h3-galle', topic: 'Galle', make() {
+        return mc('Was bewirkt die Galle bei der Verdauung?', ['Sie hilft, Fette zu verdauen, indem sie Fett und Wasser vermischt.', 'Sie zerlegt Stärke.', 'Sie bildet Salzsäure.', 'Sie transportiert Sauerstoff.'],
+          'Galle (aus der Leber) gelangt in den Zwölffingerdarm. Sie hilft, Fette fein zu verteilen, sodass sie besser abgebaut werden können.');
+      } },
+      { id: 'h3-oberfl', topic: 'Oberflächenvergrösserung', make() {
+        return mc('Warum ist die Innenwand des Dünndarms stark gefaltet?', ['Die grosse Oberfläche nimmt mehr Nährstoffe auf, ähnlich wie ein Frotteetuch mehr Wasser saugt als ein Leinentuch.', 'Damit er weniger Platz braucht und Nährstoffe verloren gehen.', 'Damit der Darm kürzer wird.', 'Das hat keinen Grund.'],
+          'Mit einer grossen Oberfläche können viele Nährstoffe gleichzeitig in das Blut gelangen. Das Frotteetuch-Modell zeigt dieses Prinzip.');
+      } },
+      { id: 'h3-stoffwechsel', topic: 'Vier Stoffwechselvorgänge', make() {
+        return mc('Welche vier zentralen Stoffwechselvorgänge gibt es?', ['Aufnahme, Transport, Umwandlung und Abgabe.', 'Essen, Schlafen, Laufen und Sprechen.', 'Kauen, Schlucken, Verdauen und Ausscheiden.', 'Atmen, Denken, Fühlen und Sehen.'],
+          'Bei der Verdauung sind das zum Beispiel: Aufnahme von Nährstoffen im Darm, Transport mit dem Blut, Umwandlung in der Leber und Abgabe von Unverdaulichem.');
+      } },
+      { id: 'h3-portion', topic: 'Energie einer Portion', make() {
+        const s = rnd([[1500, 40], [2000, 25], [1000, 150], [400, 250], [1800, 50]]), e = r2(s[0] * s[1] / 100);
+        return num(`Ein Lebensmittel enthält pro 100 g ${fmt(s[0])} kJ (Beispielwert). Wie viel Energie steckt in ${fmt(s[1])} g?`, 'kJ', e, 'Teile die Masse durch 100 und multipliziere mit dem Energiegehalt pro 100 g.', `${fmt(s[1])} g : 100 g · ${fmt(s[0])} kJ = ${fmt(e)} kJ`);
+      } }
+    ]
+  },
+  {
+    id: 'h4', nr: 4, title: 'Krankheitserreger und Infektionen', sub: 'Viren, Bakterien, Pilze und STI',
+    items: [
+      { id: 'h4-arten', topic: 'Arten von Erregern', make() {
+        return mc('Welche häufigen Krankheitserreger unterscheidest du?', ['Viren, Bakterien und Pilze.', 'Nur Viren.', 'Nur Bakterien.', 'Tiere und Pflanzen.'],
+          'Viren, Bakterien und Pilze können Krankheiten auslösen. Die Immunantwort fällt je nach Erreger unterschiedlich aus.');
+      } },
+      { id: 'h4-bakt', topic: 'Nützliche Bakterien', make() {
+        return mc('Sind alle Bakterien schädlich?', ['Nein. Es gibt auch nützliche, zum Beispiel bei der Joghurtherstellung oder im Darm.', 'Ja, alle sind gefährlich.', 'Nein, Bakterien gibt es nicht im Körper.', 'Ja, aber nur im Wasser.'],
+          'Viele Bakterien sind harmlos oder sogar nützlich. Nur einige wenige Arten lösen Krankheiten aus.');
+      } },
+      { id: 'h4-pilz', topic: 'Pilze', make() {
+        return mc('Welche Aussage über Pilze stimmt?', ['Das Reich der Pilze reicht von einzelligen Hefepilzen bis zu mehrzelligen Pilzen mit Fruchtkörpern. Typisch sind Zellfäden.', 'Hefepilze gehören nicht zu den Pilzen.', 'Alle Pilze sind einzellig.', 'Pilze haben keine Zellen.'],
+          'Beim Mikroskopieren von Schimmelpilz erkennst du die typischen Zellfäden. Hefepilze sind einzellig, aber trotzdem Pilze.');
+      } },
+      { id: 'h4-hemm', topic: 'Hemmhof', make() {
+        return mc('Um ein Filterpapierchen auf dem Hefe-Nährboden bleibt ein heller Ring ohne Wachstum. Was zeigt das?', ['Die Substanz hemmt das Wachstum der Hefepilze: Es ist ein Hemmhof.', 'Die Hefe wächst dort besonders gut.', 'Der Nährboden ist leer.', 'Das Papier ist aufgelöst.'],
+          'Der Hemmhof zeigt, dass die Substanz im Papierchen das Wachstum der Pilze verhindert. So kann man testen, ob ein Mittel wirkt.');
+      } },
+      { id: 'h4-vergleich', topic: 'Viren und Bakterien', make() {
+        return mc('Was unterscheidet Viren von Bakterien?', ['Viren sind viel kleiner und vermehren sich nur in Wirtszellen. Bakterien sind eigene Zellen und teilen sich selbst.', 'Viren sind grösser als Bakterien.', 'Bakterien brauchen immer eine Wirtszelle.', 'Es gibt keinen Unterschied.'],
+          'Weil Viren und Bakterien sich so verschieden vermehren, fällt auch die Immunantwort unterschiedlich aus.');
+      } },
+      { id: 'h4-teilung', topic: 'Bakterien teilen sich', ext: true, make() {
+        const n0 = rnd([1, 2, 5, 10]), t = rnd([60, 90, 120, 150]), r = n0 * Math.pow(2, t / 30);
+        return num(`Zu Beginn sind ${fmt(n0)} Bakterien vorhanden. In diesem Beispiel teilen sie sich alle 30 Minuten und verdoppeln dadurch ihre Zahl. Wie viele Bakterien sind es nach ${fmt(t)} Minuten?`, 'Bakterien', r, 'Zähle, wie oft sich die Bakterien in dieser Zeit teilen. Bei jeder Teilung verdoppelt sich die Zahl.', `${fmt(t)} min : 30 min = ${fmt(t / 30)} Teilungen<br>${fmt(n0)} · 2<sup>${fmt(t / 30)}</sup> = ${fmt(r)}`);
+      } },
+      { id: 'h4-sti', topic: 'Sexuell übertragbare Infektionen', make() {
+        return mc('Was sind sexuell übertragbare Infektionen (STI)?', ['Infektionen, die bei sexuellen Kontakten übertragen werden und durch Bakterien, Viren oder Pilze ausgelöst werden. Beispiele sind HIV, Chlamydien, Genitalherpes und HPV.', 'Infektionen, die nur durch Händeschütteln übertragen werden.', 'Erkrankungen, die nur Erwachsene betreffen können.', 'Infektionen, die immer sofort Beschwerden machen.'],
+          'STI können durch Bakterien, Viren oder Pilze verursacht werden. Manche, zum Beispiel Chlamydien, werden bei Jugendlichen in den letzten Jahren häufiger diagnostiziert.');
+      } },
+      { id: 'h4-risiko', topic: 'Risiko wahrnehmen', make() {
+        return mc('Warum sollte man das Risiko einer STI ernst nehmen?', ['Viele Jugendliche unterschätzen es. Auch wer sein Gegenüber gut kennt, kann sich anstecken, und die Zahl der diagnostizierten Infektionen bei Jugendlichen steigt.', 'Weil Ansteckung nur bei Fremden möglich ist.', 'Weil STI immer harmlos sind.', 'Weil STI nur in anderen Ländern vorkommen.'],
+          'Eine Infektion kann auch ohne Anzeichen vorhanden sein. Darum sind Schutz und Tests wichtig.');
+      } },
+      { id: 'h4-schutz', topic: 'Schutz vor STI', make() {
+        return mc('Wie kann man sich vor einer Ansteckung mit STI schützen?', ['Mit den Regeln von Safer Sex, zum Beispiel mit Kondom oder Femidom (Kondom für die Frau).', 'Mit der Pille.', 'Mit sofortigem Duschen nach dem Kontakt.', 'Gar nicht, es geht nicht.'],
+          'Safer Sex senkt das Risiko deutlich. Wie man es im Detail richtig macht, erklären Fachstellen für Sexualaufklärung.');
+      } },
+      { id: 'h4-pille', topic: 'Pille und STI', make() {
+        return mc('Welche Aussage über die Pille ist richtig?', ['Die Pille schützt nicht vor STI.', 'Die Pille schützt auch vor STI.', 'Die Pille schützt nur vor Viren.', 'Die Pille schützt vor HIV, aber vor nichts sonst.'],
+          'Die Pille ist ein Verhütungsmittel, kein Schutz vor Ansteckung. Ein verbreiteter Irrtum ist, dass sie auch vor STI schützt.');
+      } },
+      { id: 'h4-oral', topic: 'Weitere Übertragungswege', make() {
+        return mc('Kann man sich beim Oralsex mit einer STI anstecken?', ['Ja, auch dabei ist eine Ansteckung möglich.', 'Nein, dabei kann nichts passieren.', 'Nur wenn man Medikamente nimmt.', 'Nur bei Erwachsenen.'],
+          'Auch Vorstellungen wie «Ich bin oben, dann ist das Risiko kleiner» oder «Ich dusche danach» schützen nicht vor einer Ansteckung.');
+      } },
+      { id: 'h4-hiv', topic: 'HI-Virus und Immunsystem', make() {
+        return mc('Wie wirkt das HI-Virus auf den Körper?', ['Es befällt T-Helferzellen des Immunsystems und schwächt dadurch die Abwehr.', 'Es zerstört nur die Haut.', 'Es wirkt nur auf die Knochen.', 'Es macht das Immunsystem stärker.'],
+          'T-Helferzellen steuern die Abwehr. Sind sie befallen, kann der Körper Erreger schlechter bekämpfen.');
+      } },
+      { id: 'h4-info', topic: 'Information und Beratung', make() {
+        return mc('Wo kannst du dich zu Sexualität, Schutz und Tests informieren?', ['Bei Fachstellen für Sexualaufklärung, in Arztpraxen, bei Beratungs- und Teststellen und mit seriösen, altersgemässen Medien.', 'Nur in sozialen Medien.', 'Nirgends, darüber spricht man nicht.', 'Nur bei Freunden.'],
+          'Es gibt vielfältige Beziehungsformen und Arten, Sexualität zu leben. Gute Fachstellen beantworten Fragen respektvoll und ohne Stereotype.');
+      } }
+    ]
+  },
+  {
+    id: 'h5', nr: 5, title: 'Immunsystem und Blutgruppen', sub: 'Antigen und Antikörper',
+    items: [
+      { id: 'h5-schluessel', topic: 'Schlüssel-Schloss-Prinzip', make() {
+        return mc('Wie funktioniert die Antigen-Antikörper-Reaktion?', ['Nach dem Schlüssel-Schloss-Prinzip: Ein Antikörper passt genau zu einem bestimmten Antigen.', 'Jeder Antikörper passt zu jedem Antigen.', 'Antikörper sind Stoffe, die Erreger auffressen.', 'Antigene bilden Antikörper.'],
+          'Antigene sind Merkmale auf Erregern oder Fremdstoffen. Ein Antikörper passt wie ein Schlüssel nur zu einem Antigen.');
+      } },
+      { id: 'h5-abwehr', topic: 'Abwehr statt Kampf', make() {
+        return mc('Welches Wort passt fachlich besser als «Kampf» gegen Viren?', ['Abwehr.', 'Krieg.', 'Schlacht.', 'Angriff.'],
+          'Die Immunantwort beruht auf dem Schlüssel-Schloss-Prinzip und nicht auf einem Kampf. Darum sagt man besser «Abwehr».');
+      } },
+      { id: 'h5-unspez', topic: 'Spezifisch und unspezifisch', make() {
+        return mc('Was ist der Unterschied zwischen unspezifischer und spezifischer Immunantwort?', ['Die unspezifische richtet sich gegen alle Erreger (zum Beispiel Fresszellen). Die spezifische richtet sich gegen einen bestimmten Erreger (zum Beispiel B-Zellen mit Antikörpern).', 'Beide sind genau gleich.', 'Die unspezifische gibt es nur nach einer Impfung.', 'Die spezifische richtet sich gegen alles.'],
+          'Die unspezifische Abwehr reagiert sofort allgemein. Die spezifische Abwehr braucht etwas Zeit, richtet sich genau gegen den Erreger und bildet Gedächtniszellen.');
+      } },
+      { id: 'h5-gruppe', topic: 'Blutgruppe A', make() {
+        return mc('Eine Person hat die Blutgruppe A. Was gilt?', ['Ihre roten Blutzellen tragen das Antigen A, im Blutplasma sind Antikörper gegen B.', 'Ihre roten Blutzellen tragen das Antigen B, im Plasma sind Antikörper gegen A.', 'Sie hat keine Antigene.', 'Sie hat Antikörper gegen A.'],
+          'Das Immunsystem bildet keine Antikörper gegen eigene Antigene. Bei Blutgruppe A gibt es darum Antikörper gegen B.');
+      } },
+      { id: 'h5-spender', topic: 'Spender und Empfänger', make() {
+        return mc('Welche Blutgruppe gilt für rote Blutzellen als Universalspender und welche als Universalempfänger?', ['Blutgruppe 0 ist Universalspender, Blutgruppe AB ist Universalempfänger.', 'Blutgruppe AB ist Universalspender, Blutgruppe 0 ist Universalempfänger.', 'Blutgruppe A für beides.', 'Blutgruppe B für beides.'],
+          '0-Blut trägt keine Antigene A oder B. Daher lösen die Blutzellen bei niemandem eine Reaktion aus. AB hat keine Antikörper und verträgt alle Blutgruppen.');
+      } },
+      { id: 'h5-allergie', topic: 'Allergie', make() {
+        return mc('Was ist eine Allergie?', ['Eine Überreaktion des Immunsystems auf eigentlich harmlose Stoffe.', 'Eine Infektion mit Bakterien.', 'Eine Mangelkrankheit.', 'Eine Verletzung.'],
+          'Bei einer Allergie reagiert das Immunsystem zu stark auf Stoffe wie Pollen. Der Körper behandelt sie, als wären sie gefährliche Erreger.');
+      } }
+    ]
+  },
+  {
+    id: 'h6', nr: 6, title: 'Impfen, Krebs und Medikamente', sub: 'Vorbeugen und richtig handeln',
+    items: [
+      { id: 'h6-aktiv', topic: 'Schutzimpfung', make() {
+        return mc('Was geschieht bei einer Schutzimpfung (aktive Immunisierung)?', ['Der Körper bildet selbst Antikörper und Gedächtniszellen und ist danach lange geschützt.', 'Der Körper bekommt fertige Antikörper und ist nur kurz geschützt.', 'Der Körper bekommt Medikamente gegen Bakterien.', 'Der Körper wird krank.'],
+          'Der Impfstoff enthält abgeschwächte oder abgetötete Erreger oder Teile davon. Das Immunsystem lernt sie kennen und bildet Gedächtniszellen.');
+      } },
+      { id: 'h6-passiv', topic: 'Heilimpfung', make() {
+        return mc('Warum führt eine Heilimpfung (passive Immunisierung) nicht zu langem Schutz?', ['Weil der Körper keine eigenen Gedächtniszellen bildet, die fertigen Antikörper werden abgebaut.', 'Weil sie keine Antikörper enthält.', 'Weil sie nur bei Kindern wirkt.', 'Weil sie immer Nebenwirkungen hat.'],
+          'Bei der Heilimpfung erhält man fertige Antikörper. Sie helfen sofort, aber nur kurze Zeit. Sie ersetzt eine Schutzimpfung nicht.');
+      } },
+      { id: 'h6-grippe', topic: 'Grippeimpfung', make() {
+        return mc('Die Grippeimpfung wird jedes Jahr neu entwickelt. Was gilt?', ['Sie ist eine Schutzimpfung, die jährlich nötig ist, weil sich die Grippeviren stark verändern.', 'Sie ist eine Heilimpfung.', 'Sie wirkt ein Leben lang.', 'Sie schützt gegen alle Krankheiten.'],
+          'Die Antigene der Grippeviren ändern sich jedes Jahr. Der Impfstoff muss darum angepasst und die Impfung wiederholt werden.');
+      } },
+      { id: 'h6-krebs', topic: 'Krebs', make() {
+        return mc('Wie entsteht Krebs und was ist der Unterschied zwischen gutartigen und bösartigen Tumoren?', ['Körperzellen teilen sich unkontrolliert. Bösartige Tumoren wachsen in umliegendes Gewebe ein und können Tochtergeschwülste bilden.', 'Krebs ist immer ansteckend.', 'Gutartige Tumoren breiten sich im ganzen Körper aus.', 'Krebs entsteht nur im Alter.'],
+          'Krebs beginnt mit veränderten Zellen, die sich ungebremst teilen. Auch junge Menschen können erkranken. Früherkennung und Therapie haben viele Verläufe verbessert.');
+      } },
+      { id: 'h6-risiko', topic: 'Krebsrisiko senken', make() {
+        return mc('Was kannst du tun, um das Risiko für bestimmte Krebsarten zu verringern?', ['Nicht rauchen, Sonnenschutz nutzen und Vorsorgeuntersuchungen wahrnehmen.', 'Nichts, Krebs ist immer reines Schicksal.', 'Viel rauchen, damit der Körper sich daran gewöhnt.', 'Nie zum Arzt gehen.'],
+          'Bei manchen Krebsarten lässt sich das Risiko senken. Es gibt aber keine Garantie. Auch gesundheitsbewusste Menschen können erkranken.');
+      } },
+      { id: 'h6-medi', topic: 'Umgang mit Medikamenten', make() {
+        return mc('Wie gehst du richtig mit Medikamenten um?', ['Beipackzettel lesen, bei Unsicherheit Ärztin, Arzt oder Apotheke fragen und nicht ohne Grund regelmässig einnehmen.', 'Beipackzettel wegwerfen.', 'Jeden Abend eine Beruhigungstablette nehmen, um gut zu schlafen.', 'Mehr nehmen, damit es schneller wirkt.'],
+          'Medikamente haben Wirkungen und Nebenwirkungen. Besonders Beruhigungs- und Schlafmittel können abhängig machen.');
+      } }
+    ]
+  }
+];
+
+/* ---------- Lerninhalt ---------- */
+const merk = h => `<div class="merk"><span class="mk" aria-hidden="true">\u2605</span><div>${h}</div></div>`;
+const warnbox = h => `<div class="merk warn"><span class="mk" aria-hidden="true">!</span><div>${h}</div></div>`;
+
+const LESSONS = {
+  h1: [
+    { h: 'Gesundheit hat drei Seiten',
+      body: `${merk('Gesundheit umfasst das <b>körperliche</b>, das <b>geistige</b> und das <b>soziale</b> Wohlergehen.')}
+        <p><b>Schutzfaktoren</b> (zum Beispiel Bewegung, Schlaf, gute Beziehungen, Verzicht auf Suchtmittel) unterstützen die Gesundheit. <b>Risikofaktoren</b> (zum Beispiel Rauchen, dauernder Stress, Mobbing) erhöhen das Risiko für Beschwerden.</p>` },
+    { h: 'Die Hauptnährstoffe',
+      body: `<ul><li><b>Kohlenhydrate:</b> Stärke und Zucker, liefern vor allem Energie.</li>
+        <li><b>Fette:</b> liefern Energie und sind Baustoffe.</li>
+        <li><b>Proteine:</b> Eiweisse, Baustoffe für Muskeln, Haut und mehr.</li></ul>
+        <p>Die Ernährungspyramide hilft dir, die Lebensmittel nach Menge einzuordnen.</p>` },
+    { h: 'Energie und Umsatz',
+      body: `${merk('Sage <b>«benötigt»</b> und <b>«umgewandelt»</b>, nicht «verbraucht». Die Energie aus der Nahrung wird zum Beispiel in thermische Energie und Bewegungsenergie umgewandelt.')}
+        <p><b>Grundumsatz</b> ist die Energie, die der Körper in Ruhe benötigt. <b>Leistungsumsatz</b> kommt durch Bewegung dazu. Zusammen ergeben sie den <b>Gesamtumsatz</b>. Die Zahlen hängen von Person und Tätigkeit ab.</p>` },
+    { h: 'Vorgerechnet: Gesamtumsatz', worked: {
+      given: 'In einem Beispiel beträgt der Grundumsatz 7000 kJ pro Tag und der Leistungsumsatz 3000 kJ. Wie gross ist der Gesamtumsatz?',
+      steps: [['Formel', 'Gesamtumsatz = Grundumsatz + Leistungsumsatz'], ['Rechnung', '7000 kJ + 3000 kJ = 10 000 kJ'], ['Antwort', 'Der Gesamtumsatz beträgt in diesem Beispiel 10 000 kJ pro Tag.']] } },
+    { h: 'Kurz testen',
+      check: { q: 'Wozu gehören Schlaf und Bewegung?',
+        options: ['Zu den Schutzfaktoren für die Gesundheit.', 'Zu den Risikofaktoren.', 'Zu den Hauptnährstoffen.', 'Zu den Krankheitserregern.'],
+        explain: 'Bewegung und ausreichend Schlaf unterstützen das körperliche und geistige Wohlergehen. Sie sind Schutzfaktoren.' } }
+  ],
+  h2: [
+    { h: 'Nährstoffe nachweisen',
+      body: `<ul><li><b>Stärke:</b> Lugol-Lösung färbt blauviolett.</li>
+        <li><b>Traubenzucker:</b> Teststreifen ändert die Farbe.</li>
+        <li><b>Fett:</b> Fettfleck auf Papier, der durchscheint.</li>
+        <li><b>Protein:</b> zum Beispiel Eiklar mit Essig (es gerinnt).</li></ul>
+        ${merk('Mache immer einen <b>Kontrollversuch</b> mit reinem Wasser. Nur im Vergleich siehst du, ob der Nachweis positiv ist.')}` },
+    { h: 'Welcher Nachweis?',
+      body: '<p>Ordne jeder Beobachtung den passenden Nährstoff zu.</p>', sim: 'nachweis' },
+    { h: 'Fett extrahieren',
+      body: `<p>Beim Extrahieren löst ein Lösungsmittel (zum Beispiel Aceton) das Fett aus den zerkleinerten Chips. Nach dem Abdampfen bleibt das Fett zurück.</p>
+        ${warnbox('<b>Sicherheit:</b> Aceton ist leicht entzündlich. Dampfe es auf einer Heizplatte ab, nie über einer Flamme. Arbeite nur mit Schutzbrille und nach Anweisung der Lehrperson.')}` },
+    { h: 'Vorgerechnet: Fettanteil', worked: {
+      given: 'Aus 5 g Kartoffelchips (Beispiel) werden 1,5 g Fett extrahiert. Wie viel Prozent sind Fett?',
+      steps: [['Formel', 'Anteil = Fett : Probe · 100 %'], ['Rechnung', '1,5 g : 5 g = 0,3'], ['Antwort', '0,3 · 100 % = 30 %. Die Chips bestehen in diesem Beispiel zu 30 % aus Fett.']] } },
+    { h: 'Kurz testen',
+      check: { q: 'Du gibst Lugol-Lösung auf eine Kartoffelscheibe. Sie wird blauviolett. Was zeigt das?',
+        options: ['Es ist Stärke vorhanden.', 'Es ist Fett vorhanden.', 'Es ist Eiweiss vorhanden.', 'Es ist nur Wasser vorhanden.'],
+        explain: 'Der blauviolette Farbumschlag mit Lugol-Lösung ist der Nachweis für Stärke.' } }
+  ],
+  h3: [
+    { h: 'Der Weg der Nahrung',
+      body: '<p>Die Nahrung durchläuft viele Organe. Tippe auf «Weiter» und folge ihr von Mund bis Mastdarm.</p>', sim: 'verdauung' },
+    { h: 'Enzyme, Säure und Galle',
+      body: `<ul><li><b>Mund:</b> Ein Enzym im Speichel zerlegt Stärke.</li>
+        <li><b>Magen:</b> Salzsäure und das Enzym Pepsin greifen Proteine an.</li>
+        <li><b>Zwölffingerdarm:</b> Galle (aus der Leber) hilft bei den Fetten, der Bauchspeichel enthält Verdauungsenzyme.</li></ul>
+        <p>Die Nährstoffe werden in ihre Bausteine zerlegt (Proteine in Aminosäuren, Fette in Fettsäuren und Glycerin, Kohlenhydrate in Zucker).</p>` },
+    { h: 'Oberfläche vergrössern',
+      body: `${merk('Die Innenwand des Dünndarms hat viele Falten. Die <b>grosse Oberfläche</b> lässt mehr Nährstoffe gleichzeitig ins Blut übergehen.')}
+        <p>Im Modell saugt ein <b>Frotteetuch</b> mehr Wasser auf als ein glattes Leinentuch. Das Modell hat Grenzen: Der Darm ist lebendig und bewegt sich.</p>` },
+    { h: 'Vorgerechnet: Energie einer Portion', worked: {
+      given: 'Ein Lebensmittel enthält pro 100 g 1500 kJ (Beispielwert). Wie viel Energie steckt in 40 g?',
+      steps: [['Masse in Verhältnis setzen', '40 g : 100 g = 0,4'], ['Rechnung', '0,4 · 1500 kJ = 600 kJ'], ['Antwort', 'In 40 g stecken 600 kJ.']] } },
+    { h: 'Kurz testen',
+      check: { q: 'Wo beginnt die Verdauung?',
+        options: ['Schon im Mund, durch das Enzym im Speichel.', 'Erst im Magen.', 'Erst im Dünndarm.', 'Im Dickdarm.'],
+        explain: 'Die Verdauung beginnt im Mund: Der Speichel beginnt, Stärke zu zerlegen.' } }
+  ],
+  h4: [
+    { h: 'Viren, Bakterien und Pilze',
+      body: `<ul><li><b>Viren:</b> viel kleiner als Bakterien, vermehren sich nur in Wirtszellen.</li>
+        <li><b>Bakterien:</b> einzellige Lebewesen. Es gibt viele nützliche (Joghurt, Darm).</li>
+        <li><b>Pilze:</b> einzellig (Hefe) bis mehrzellig, typisch sind Zellfäden.</li></ul>` },
+    { h: 'Pilze untersuchen',
+      body: `<p>Unter dem Mikroskop siehst du bei Schimmelpilz die <b>Zellfäden</b>. Auf einem Hefe-Nährboden zeigt ein <b>Hemmhof</b> um ein Filterpapierchen, dass eine Substanz das Wachstum hemmt.</p>
+        ${warnbox('<b>Sicherheit:</b> In der Schule werden keine Bakterien auf Nährböden gezüchtet. Für Hefepilze gibt es spezielle Nährböden. Wasche dir nach dem Arbeiten die Hände.')}` },
+    { h: 'Sexuell übertragbare Infektionen (STI)',
+      body: `<p>STI werden bei sexuellen Kontakten übertragen. Sie können durch <b>Bakterien</b>, <b>Viren</b> oder <b>Pilze</b> ausgelöst werden, zum Beispiel HIV, Chlamydien, Genitalherpes und HPV. Viele Jugendliche unterschätzen das Risiko. Eine Ansteckung ist auch bei Menschen möglich, die man gut kennt.</p>
+        ${merk('<b>Schutz:</b> Safer Sex, zum Beispiel mit <b>Kondom</b> oder <b>Femidom</b>. Die <b>Pille</b> schützt nicht vor STI. Das HI-Virus befällt die <b>T-Helferzellen</b> und schwächt das Immunsystem.')}` },
+    { h: 'Stimmt das?',
+      body: '<p>Beurteile die Aussagen zum Schutz vor STI.</p>', sim: 'sti' },
+    { h: 'Information und Beratung',
+      body: `<p>Fragen zu Sexualität, Schutz und Tests klärst du am besten mit <b>Fachstellen für Sexualaufklärung</b>, in der Arztpraxis oder bei <b>Beratungs- und Teststellen</b>. Es gibt viele Formen von Beziehungen und Arten, Sexualität zu leben. Gute Beratung ist respektvoll und frei von Stereotypen.</p>
+        ${warnbox('Frage nach, wenn etwas unklar ist. Hole dir Rat bei einer Vertrauensperson, in der Arztpraxis oder bei einer Beratungsstelle, wenn du unsicher bist.')}` },
+    { h: 'Bakterien vermehren sich',
+      body: '<p>Stelle die Zeit ein. In diesem Beispiel verdoppeln sich die Bakterien alle 30 Minuten. Das ist ein Modell mit Beispielwerten.</p>', sim: 'wachstum' },
+    { h: 'Vorgerechnet: Teilung', worked: {
+      given: 'Zu Beginn sind 5 Bakterien vorhanden. Sie verdoppeln sich alle 30 Minuten. Wie viele sind es nach 90 Minuten?',
+      steps: [['Teilungen zählen', '90 min : 30 min = 3 Teilungen'], ['Rechnung', '5 · 2 · 2 · 2 = 5 · 8 = 40'], ['Antwort', 'Nach 90 Minuten sind es 40 Bakterien.']] } },
+    { h: 'Kurz testen',
+      check: { q: 'Warum wird die Immunantwort bei Viren und Bakterien anders?',
+        options: ['Weil sie sich verschieden vermehren: Viren in Wirtszellen, Bakterien durch Teilung.', 'Weil Viren grösser sind.', 'Weil Bakterien keine Zellen sind.', 'Weil es keinen Unterschied gibt.'],
+        explain: 'Die verschiedene Vermehrung führt dazu, dass das Immunsystem unterschiedlich abwehren muss.' } }
+  ],
+  h5: [
+    { h: 'Das Immunsystem',
+      body: `<p>Das Immunsystem wehrt Erreger ab. Sage <b>«Abwehr»</b>, nicht «Kampf».</p>
+        <ul><li><b>Unspezifische Abwehr:</b> richtet sich gegen alle Erreger, zum Beispiel Fresszellen.</li>
+        <li><b>Spezifische Abwehr:</b> richtet sich gegen einen bestimmten Erreger. B-Zellen bilden Antikörper, T-Zellen helfen oder zerstören befallene Zellen, Gedächtniszellen merken sich den Erreger.</li></ul>
+        ${merk('Ein <b>Antikörper</b> passt wie ein Schlüssel zu einem bestimmten <b>Antigen</b>: das <b>Schlüssel-Schloss-Prinzip</b>.')}` },
+    { h: 'Spezifisch oder unspezifisch?',
+      body: '<p>Ordne die Vorgänge einer Abwehrart zu.</p>', sim: 'immun' },
+    { h: 'Blutgruppen im ABO-System',
+      body: `<ul><li><b>A:</b> Antigen A, Antikörper gegen B.</li>
+        <li><b>B:</b> Antigen B, Antikörper gegen A.</li>
+        <li><b>AB:</b> Antigene A und B, keine Antikörper (Universalempfänger).</li>
+        <li><b>0:</b> keine Antigene, Antikörper gegen A und B (Universalspender für rote Blutzellen).</li></ul>
+        <p>In der Schule wird nur mit Kunstblut gearbeitet, nicht mit echtem Blut von Lernenden.</p>` },
+    { h: 'Blutspende testen',
+      body: '<p>Wähle Spender und Empfänger. Du siehst, ob die Blutgruppen zusammenpassen. Das ist ein Modell.</p>', sim: 'blut' },
+    { h: 'Kurz testen',
+      check: { q: 'Welche Blutgruppe kann als Spender für rote Blutzellen an alle Blutgruppen gegeben werden?',
+        options: ['Blutgruppe 0.', 'Blutgruppe AB.', 'Blutgruppe A.', 'Blutgruppe B.'],
+        explain: 'Blutgruppe 0 trägt weder Antigen A noch Antigen B. Die Antikörper der Empfänger finden also nichts, woran sie sich binden.' } }
+  ],
+  h6: [
+    { h: 'Impfen',
+      body: `<ul><li><b>Schutzimpfung (aktive Immunisierung):</b> Der Körper bildet selbst Antikörper und Gedächtniszellen. Der Schutz hält lange.</li>
+        <li><b>Heilimpfung (passive Immunisierung):</b> Der Körper bekommt fertige Antikörper. Sie wirken sofort, aber nur kurz.</li></ul>
+        <p>Die Grippeimpfung ist eine Schutzimpfung, die jährlich neu entwickelt wird, weil sich die Grippeviren verändern.</p>` },
+    { h: 'Aktiv oder passiv?',
+      body: '<p>Ordne die Beispiele einer Impfart zu.</p>', sim: 'impf' },
+    { h: 'Krebs',
+      body: `<p>Bei Krebs teilen sich veränderte Körperzellen unkontrolliert. <b>Gutartige</b> Tumoren wachsen langsam und bleiben begrenzt. <b>Bösartige</b> Tumoren dringen in umliegendes Gewebe ein und können sich im Körper ausbreiten.</p>
+        <p>Das Risiko sinkt bei manchen Krebsarten, wenn du nicht rauchst, dich vor starker Sonne schützt und Vorsorgeuntersuchungen wahrnimmst. Krebs ist nicht einfach Schicksal, aber auch gesundheitsbewusste Menschen können erkranken.</p>` },
+    { h: 'Medikamente',
+      body: `${merk('Kein Medikament wirkt <b>ohne Nebenwirkung</b>. Lies den Beipackzettel und frage bei Unsicherheit in der Apotheke oder bei der Ärztin oder dem Arzt.')}
+        <p>Besonders Beruhigungs- und Schlafmittel sowie manche Schmerzmittel können abhängig machen. Nimm Medikamente nicht ohne Grund regelmässig ein.</p>` },
+    { h: 'Kurz testen',
+      check: { q: 'Wie wirkt eine Heilimpfung (passive Immunisierung)?',
+        options: ['Sie gibt fertige Antikörper, die schnell wirken, aber nur kurz.', 'Sie bildet Gedächtniszellen für lebenslangen Schutz.', 'Sie tötet alle Bakterien im Körper.', 'Sie ersetzt eine Schutzimpfung vollständig.'],
+        explain: 'Fertige Antikörper helfen sofort, werden aber abgebaut. Es entstehen keine eigenen Gedächtniszellen.' } }
+  ]
+};
+const GOALS = {
+  h1: ['Dimensionen der Gesundheit nennen', 'Hauptnährstoffe und Energieumsatz beschreiben'],
+  h2: ['Nährstoffe mit Nachweisen untersuchen', 'einen Kontrollversuch begründen'],
+  h3: ['den Weg der Nahrung beschreiben', 'die Verdauungsschritte den Stoffwechselvorgängen zuordnen'],
+  h4: ['Viren, Bakterien und Pilze unterscheiden', 'Experimente mit Pilzen auswerten', 'sich vor sexuell übertragbaren Infektionen schützen und informieren'],
+  h5: ['die Antigen-Antikörper-Reaktion erklären', 'Blutgruppen und Spenderregeln anwenden'],
+  h6: ['Schutz- und Heilimpfung unterscheiden', 'Krebs und Medikamente verantwortungsvoll beurteilen']
+};
+const LEARN = {
+  'h1-dim': 'Gesundheit hat drei Seiten', 'h1-schutz': 'Gesundheit hat drei Seiten', 'h1-nahr': 'Die Hauptnährstoffe', 'h1-energie': 'Energie und Umsatz', 'h1-umsatz': 'Vorgerechnet: Gesamtumsatz', 'h1-ausgew': 'Die Hauptnährstoffe',
+  'h2-staerke': 'Nährstoffe nachweisen', 'h2-zucker': 'Nährstoffe nachweisen', 'h2-kontrolle': 'Nährstoffe nachweisen', 'h2-aceton': 'Fett extrahieren', 'h2-fett': 'Vorgerechnet: Fettanteil', 'h2-extraktion': 'Fett extrahieren',
+  'h3-weg': 'Der Weg der Nahrung', 'h3-speichel': 'Enzyme, Säure und Galle', 'h3-galle': 'Enzyme, Säure und Galle', 'h3-oberfl': 'Oberfläche vergrössern', 'h3-stoffwechsel': 'Der Weg der Nahrung', 'h3-portion': 'Vorgerechnet: Energie einer Portion',
+  'h4-arten': 'Viren, Bakterien und Pilze', 'h4-bakt': 'Viren, Bakterien und Pilze', 'h4-pilz': 'Pilze untersuchen', 'h4-hemm': 'Pilze untersuchen', 'h4-vergleich': 'Viren, Bakterien und Pilze', 'h4-teilung': 'Vorgerechnet: Teilung',
+  'h4-sti': 'Sexuell übertragbare Infektionen (STI)', 'h4-risiko': 'Sexuell übertragbare Infektionen (STI)', 'h4-schutz': 'Sexuell übertragbare Infektionen (STI)', 'h4-pille': 'Stimmt das?', 'h4-oral': 'Stimmt das?', 'h4-hiv': 'Sexuell übertragbare Infektionen (STI)', 'h4-info': 'Information und Beratung',
+  'h5-schluessel': 'Das Immunsystem', 'h5-abwehr': 'Das Immunsystem', 'h5-unspez': 'Spezifisch oder unspezifisch?', 'h5-gruppe': 'Blutgruppen im ABO-System', 'h5-spender': 'Blutspende testen', 'h5-allergie': 'Das Immunsystem',
+  'h6-aktiv': 'Impfen', 'h6-passiv': 'Impfen', 'h6-grippe': 'Aktiv oder passiv?', 'h6-krebs': 'Krebs', 'h6-risiko': 'Krebs', 'h6-medi': 'Medikamente'
+};
+STATIONS.forEach(s => {
+  s.lesson = LESSONS[s.id]; s.goals = GOALS[s.id];
+  s.items.forEach(t => { t.learn = LEARN[t.id]; if (!s.lesson.some(c => c.h === t.learn)) throw new Error('Lernkarte fehlt: ' + t.id); });
+});
+
+const LEVELS = [
+  { xp: 0, name: 'Zelle', pw: 'fängt an' },
+  { xp: 80, name: 'Gewebe', pw: 'verbindet sich' },
+  { xp: 200, name: 'Organ', pw: 'übernimmt Aufgaben' },
+  { xp: 380, name: 'Organsystem', pw: 'arbeitet zusammen' },
+  { xp: 620, name: 'Immunzelle', pw: 'wehrt ab' },
+  { xp: 920, name: 'Körper-Profi', pw: 'kennt die Zusammenhänge' }
+];
+
+/* ---------- Thema: 8_3 Funktionen des Körpers analysieren ---------- */
+const TOPIC = {
+  id: 'nt8-3', storeKey: 'halingen-nt8-3-v1', other: { title: '7_3 Reize und Sinne untersuchen', href: '7_3_Reize_und_Sinne_untersuchen.html' },
+  title: 'Funktionen des Körpers analysieren', lead: 'Ernährung, Verdauung und Abwehr', tag: 'Natur und Technik', cardName: 'Merkkarte',
+  tips: ['Sage «benötigt» und «umgewandelt», nicht «verbraucht».', 'Sage «Abwehr» statt «Kampf».'],
+  formulas: [
+    ['Hauptnährstoffe', 'Kohlenhydrate, Fette', 'Proteine'],
+    ['Nachweise', 'Stärke: Lugol (blauviolett)', 'Zucker: Teststreifen'],
+    ['Stoffwechsel', 'Aufnahme, Transport', 'Umwandlung, Abgabe'],
+    ['Erreger', 'Viren, Bakterien, Pilze', 'Hemmhof zeigt Wirkung'],
+    ['Immunsystem', 'Antigen + Antikörper', 'Schlüssel-Schloss-Prinzip'],
+    ['Impfung', 'aktiv: Schutz lange', 'passiv: Schutz kurz']
+  ]
+};
+
+/* ---------- Simulationen ---------- */
+function sorter(el, items, names, intro, endText) {
+  el.innerHTML = `<div class="sim"><p class="small" id="gn" aria-live="polite"></p><p class="gcard" id="gc"></p>
+    <div class="gbtns" id="gb">${Object.keys(names).map(k => `<button class="btn sm" data-g="${k}">${names[k]}</button>`).join('')}</div>
+    <p class="readout" id="ro" aria-live="polite"></p>
+    <button class="btn btn-primary block" id="nx" hidden>Weiter zum nächsten Beispiel</button></div>`;
+  let i = 0, score = 0, done = false;
+  function show() {
+    done = false; $id('nx').hidden = true;
+    if (i >= items.length) {
+      $id('gn').textContent = ''; $id('gc').textContent = 'Geschafft!'; $id('gb').hidden = true;
+      $id('ro').innerHTML = `<b>${score} von ${items.length}</b> beim ersten Tipp richtig. ${endText}`;
+      const again = document.createElement('button'); again.className = 'btn sm'; again.textContent = 'Nochmals spielen';
+      again.addEventListener('click', () => { i = 0; score = 0; $id('gb').hidden = false; again.remove(); show(); });
+      $id('ro').appendChild(document.createElement('br')); $id('ro').appendChild(again); return;
+    }
+    $id('gn').textContent = 'Beispiel ' + (i + 1) + ' von ' + items.length;
+    $id('gc').textContent = items[i].t; $id('ro').textContent = intro;
+    el.querySelectorAll('[data-g]').forEach(b => b.classList.remove('good', 'bad'));
+  }
+  el.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => {
+    if (i >= items.length) return;
+    if (done) { show(); return; }
+    done = true;
+    const it = items[i], ok = it.ok.includes(b.dataset.g);
+    if (ok) score++;
+    el.querySelectorAll('[data-g]').forEach(x => { if (it.ok.includes(x.dataset.g)) x.classList.add('good'); else if (x === b) x.classList.add('bad'); });
+    $id('ro').innerHTML = (ok ? '<b>Richtig.</b> ' : '<b>Nicht ganz.</b> ') + it.why;
+    i++;
+    const nx = $id('nx'); nx.hidden = false; nx.textContent = i >= items.length ? 'Ergebnis ansehen' : 'Weiter zum nächsten Beispiel';
+    if (nx.scrollIntoView) nx.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }));
+  $id('nx').addEventListener('click', show);
+  show();
+}
+const SIMS = {
+  nachweis(el) {
+    sorter(el, [
+      { t: 'Lugol-Lösung färbt sich blauviolett', ok: ['st'], why: 'Das ist der Nachweis für Stärke.' },
+      { t: 'Der Teststreifen ändert seine Farbe', ok: ['zu'], why: 'Ein Traubenzucker-Teststreifen zeigt Zucker an.' },
+      { t: 'Auf dem Papier bleibt ein Fleck, der durchscheint', ok: ['fe'], why: 'Das ist die Fettfleck-Probe.' },
+      { t: 'Eiklar gerinnt mit Essig', ok: ['pr'], why: 'Eiweisse (Proteine) gerinnen und werden fest.' },
+      { t: 'Beim Abdampfen des Lösungsmittels bleibt eine ölige Schicht zurück', ok: ['fe'], why: 'Das extrahierte Fett bleibt zurück.' },
+      { t: 'Nach der Fehling-Probe entsteht ein roter Niederschlag', ok: ['zu'], why: 'Die Fehling-Probe weist Einfachzucker nach.' }
+    ], { st: 'Stärke', zu: 'Traubenzucker', fe: 'Fett', pr: 'Protein' }, 'Welchen Nährstoff zeigt die Beobachtung?', 'Du kannst unten mit «Weiter» zur nächsten Karte.');
+  },
+  immun(el) {
+    sorter(el, [
+      { t: 'Eine Fresszelle nimmt einen Erreger auf', ok: ['un'], why: 'Fresszellen reagieren allgemein auf viele Erreger.' },
+      { t: 'B-Zellen bilden passende Antikörper', ok: ['sp'], why: 'Die Antikörper passen nur zu einem bestimmten Antigen.' },
+      { t: 'Gedächtniszellen merken sich einen Erreger', ok: ['sp'], why: 'Sie sorgen dafür, dass der Körper den Erreger später schneller erkennt.' },
+      { t: 'Die Haut und Schleimhäute halten Erreger fern', ok: ['un'], why: 'Diese Barrieren wirken gegen alle Erreger.' },
+      { t: 'T-Killerzellen zerstören befallene Körperzellen', ok: ['sp'], why: 'Sie erkennen bestimmte Antigene auf befallenen Zellen.' }
+    ], { un: 'Unspezifisch', sp: 'Spezifisch' }, 'Richtet sich die Abwehr gegen alle Erreger oder gegen einen bestimmten?', 'Du kannst unten mit «Weiter» zur nächsten Karte.');
+  },
+  impf(el) {
+    sorter(el, [
+      { t: 'Impfung gegen Masern im Kindesalter', ok: ['ak'], why: 'Der Körper bildet selbst Antikörper und Gedächtniszellen.' },
+      { t: 'Spritze mit fertigen Antikörpern nach einer Ansteckung', ok: ['pa'], why: 'Das sind fertige Antikörper: passive Immunisierung.' },
+      { t: 'Grippeimpfung im Herbst', ok: ['ak'], why: 'Das ist eine Schutzimpfung. Sie muss jährlich wiederholt werden.' },
+      { t: 'Heilimpfung (Heilserum)', ok: ['pa'], why: 'Sie wirkt schnell, schützt aber nur kurz.' },
+      { t: 'Auffrischungsimpfung gegen Starrkrampf', ok: ['ak'], why: 'Sie erinnert das Immunsystem an den Erreger. Es ist eine aktive Immunisierung.' }
+    ], { ak: 'Aktiv (Schutzimpfung)', pa: 'Passiv (Heilimpfung)' }, 'Bildet der Körper selbst Antikörper oder bekommt er fertige?', 'Du kannst unten mit «Weiter» zur nächsten Karte.');
+  },
+
+  sti(el) {
+    sorter(el, [
+      { t: 'Liam: «Ich dusche nach dem Geschlechtsverkehr immer sofort. So kann ich mich nicht mit einer STI anstecken.»', ok: ['fa'], why: 'Duschen schützt nicht vor einer Ansteckung.' },
+      { t: 'Emma: «Ich bin beim Geschlechtsverkehr immer oben. So ist die Chance für eine Ansteckung geringer.»', ok: ['fa'], why: 'Die Position hat keinen Einfluss auf das Ansteckungsrisiko.' },
+      { t: 'Leon: «Ich habe nur Sex mit Personen, die ich gut kenne. Da kann ich mich nicht anstecken.»', ok: ['fa'], why: 'Auch bei Menschen, die man gut kennt, ist eine Ansteckung möglich.' },
+      { t: 'Sofia: «Beim Oralsex kann ich mich nicht mit einer STI anstecken.»', ok: ['fa'], why: 'Auch dabei ist eine Ansteckung möglich.' },
+      { t: 'Mia: «Eine Scheidenpilz-Infektion kann ich auch bekommen, wenn ich keinen Geschlechtsverkehr habe.»', ok: ['ja'], why: 'Das stimmt. Pilzinfektionen können auch ohne Geschlechtsverkehr entstehen.' },
+      { t: 'Noah: «Ich ziehe immer zwei Kondome an. Das ist sicherer.»', ok: ['fa'], why: 'Zwei Kondome sind nicht sicherer. Durch die Reibung können sie leichter reissen. Ein richtig angewendetes Kondom genügt.' }
+    ], { ja: 'Stimmt', fa: 'Stimmt nicht' }, 'Ist die Aussage richtig?', 'Du kannst unten mit «Weiter» zur nächsten Karte.');
+  },
+
+  verdauung(el) {
+    const S = [
+      ['Mund', 'Zähne zerkleinern die Nahrung. Das Enzym im Speichel beginnt, Stärke zu zerlegen.'],
+      ['Speiseröhre', 'Wellenförmige Muskelbewegungen (Peristaltik) schieben den Nahrungsbrei zum Magen, auch im Handstand.'],
+      ['Magen', 'Salzsäure und das Enzym Pepsin greifen Proteine an.'],
+      ['Zwölffingerdarm', 'Galle aus der Leber hilft bei den Fetten. Der Bauchspeichel enthält weitere Enzyme.'],
+      ['Dünndarm', 'Die Nährstoffe werden in ihre Bausteine zerlegt und über die grosse Oberfläche ins Blut aufgenommen.'],
+      ['Dickdarm', 'Dem unverdaulichen Rest wird Wasser entzogen.'],
+      ['Mastdarm', 'Hier werden die unverdaulichen Reste gesammelt und abgegeben.']
+    ];
+    el.innerHTML = `<div class="sim"><div class="ohrchain" aria-hidden="true">${S.map((s, i) => `<span class="ostep" data-i="${i}">${s[0]}</span>`).join('<b>→</b>')}</div>
+      <p class="readout" id="ro" aria-live="polite"></p><button class="btn btn-primary block" id="on">Weiter</button></div>`;
+    let i = 0;
+    function show() {
+      el.querySelectorAll('.ostep').forEach((x, k) => x.classList.toggle('on', k === i));
+      $id('ro').innerHTML = `<b>${S[i][0]}:</b> ${S[i][1]}`;
+      $id('on').textContent = i === S.length - 1 ? 'Nochmals von vorn' : 'Weiter';
+    }
+    $id('on').addEventListener('click', () => { i = (i + 1) % S.length; show(); });
+    show();
+  },
+
+  wachstum(el) {
+    el.innerHTML = `<div class="sim">${sl('wt', 'Zeit', 0, 180, 30, 0, 'min')}
+      <div class="trio"><div><span class="k">Teilungen</span><b class="mono" id="w1"></b></div><div><span class="k">Bakterien</span><b class="mono" id="w2"></b></div></div>
+      <div class="cubes" id="wc" aria-hidden="true"></div>
+      <p class="readout" id="ro" aria-live="polite"></p></div>`;
+    function upd() {
+      const t = +$id('wt').value, n = Math.round(t / 30), b = Math.pow(2, n);
+      $id('wtv').textContent = fmt(t); $id('w1').textContent = String(n); $id('w2').textContent = fmt(b);
+      const c = $id('wc'); c.innerHTML = '';
+      for (let i = 0; i < Math.min(b, 64); i++) { const d = document.createElement('i'); d.className = 'cube bew'; c.appendChild(d); }
+      $id('ro').innerHTML = `Start: 1 Bakterium. Nach ${fmt(t)} min: ${n} Teilungen, also 2<sup>${n}</sup> = <b>${fmt(b)}</b> Bakterien. Die Zahl verdoppelt sich immer wieder (Beispielwerte, Modell).`;
+    }
+    $id('wt').addEventListener('input', upd); upd();
+  },
+
+  blut(el) {
+    const G = { A: { ag: ['A'], ak: ['B'] }, B: { ag: ['B'], ak: ['A'] }, AB: { ag: ['A', 'B'], ak: [] }, '0': { ag: [], ak: ['A', 'B'] } };
+    const keys = Object.keys(G);
+    el.innerHTML = `<div class="sim"><p class="small">Spender</p><div class="seg3" role="group" aria-label="Spender">${keys.map((k, i) => `<button class="btn sm${i ? '' : ' on'}" data-s="${k}">${k}</button>`).join('')}</div>
+      <p class="small">Empfänger</p><div class="seg3" role="group" aria-label="Empfänger">${keys.map((k, i) => `<button class="btn sm${i ? '' : ' on'}" data-e="${k}">${k}</button>`).join('')}</div>
+      <p class="readout" id="ro" aria-live="polite"></p></div>`;
+    let s = 'A', e = 'A';
+    function upd() {
+      el.querySelectorAll('[data-s]').forEach(b => b.classList.toggle('on', b.dataset.s === s));
+      el.querySelectorAll('[data-e]').forEach(b => b.classList.toggle('on', b.dataset.e === e));
+      const bad = G[s].ag.filter(a => G[e].ak.includes(a));
+      const names = x => x.length ? x.join(' und ') : 'keine';
+      $id('ro').innerHTML = `Spender ${s}: Antigene ${names(G[s].ag)}.<br>Empfänger ${e}: Antikörper gegen ${names(G[e].ak)}.<br>` + (bad.length
+        ? `<b>Nicht verträglich:</b> Die Antikörper des Empfängers passen zum Antigen ${bad.join(' und ')} des Spenders. Die roten Blutzellen verklumpen.`
+        : '<b>Verträglich:</b> Die Antikörper des Empfängers finden kein passendes Antigen.');
+    }
+    el.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => { s = b.dataset.s; upd(); }));
+    el.querySelectorAll('[data-e]').forEach(b => b.addEventListener('click', () => { e = b.dataset.e; upd(); }));
+    upd();
+  }
+};
+
+
+const INTERVALS = [0, 1, 3, 7, 14]; // Tage bis zur nächsten Wiederholung je Box
+const ROUND_SIZE = 6;
+
+/* ---------- Interaktive Simulationen (nur Geometrie, keine Illustrationen) ---------- */
+const $id = id => document.getElementById(id);
+const nextFrame = f => requestAnimationFrame(() => requestAnimationFrame(f));
+const nf = (host, f) => nextFrame(() => { if (host.isConnected) f(); });
+const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const sl = (id, label, min, max, step, val, unit) =>
+  `<label class="sl"><span class="sll">${label}: <b class="mono" id="${id}v"></b> ${unit}</span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></label>`;
+const brow = (name, id, vid) =>
+  `<div class="brow"><span class="bname">${name}</span><div class="btrack"><div class="bfill" id="${id}"></div></div><b class="mono bval" id="${vid}"></b></div>`;
+// Zahl weich hochzählen lassen
+function tween(from, to, ms, cb) {
+  if (reduced() || from === to) { cb(to); return; }
+  const t0 = performance.now();
+  (function step(t) {
+    const p = Math.min(1, (t - t0) / ms);
+    cb(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ---------- Speicher ---------- */
+const KEY = TOPIC.storeKey;
+const CARD = TOPIC.cardName || 'Formelkarte';
+function defaults() { return { xp: 0, streak: 0, lastDay: null, stars: {}, items: {}, rounds: 0, lessons: {}, nick: null, challenges: {}, classCode: '', weekKey: 0, weekXp: 0, introDone: false, realName: '', trophies: {}, trophySeen: {}, perfect: 0, reviews: 0 }; }
+let memoryOnly = null;
+function load() {
+  try {
+    const raw = window.localStorage.getItem(KEY);
+    if (raw) return Object.assign(defaults(), JSON.parse(raw));
+  } catch (e) { /* Speicher nicht verfügbar */ }
+  return defaults();
+}
+function save() {
+  try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { memoryOnly = true; }
+}
+let state = load();
+if (!state.nick) { state.nick = newNick(); }
+
+/* ---------- Spielregeln ---------- */
+function dayIdx() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function streakNow() {
+  if (state.lastDay === null) return 0;
+  return (dayIdx() - state.lastDay) > 2 ? 0 : state.streak;
+}
+function touchStreak() {
+  const t = dayIdx();
+  if (state.lastDay === null) state.streak = 1;
+  else {
+    const diff = t - state.lastDay;
+    if (diff === 0) { /* heute schon gezählt */ }
+    else if (diff <= 2) state.streak += 1; // ein freier Tag ist erlaubt (Schonfrist)
+    else state.streak = 1;
+  }
+  state.lastDay = t;
+}
+/* ---------- Trophäen ---------- */
+const allSt = f => STATIONS.every(st => f(st));
+const TROPHIES = [
+  { id: 'start', icon: '\u{1F680}', name: 'Erster Schritt', how: 'Schliesse deine erste Runde ab.', test: s => s.rounds >= 1 },
+  { id: 'lektion', icon: '\u{1F4D6}', name: 'Neugierig', how: 'Schliesse eine Lektion ab.', test: s => Object.keys(s.lessons).length >= 1 },
+  { id: 'lektionen', icon: '\u{1F4DA}', name: 'Bücherwurm', how: 'Schliesse alle Lektionen ab.', test: s => allSt(st => s.lessons[st.id]) },
+  { id: 'perfekt', icon: '\u{1F3AF}', name: 'Volltreffer', how: 'Löse eine Runde fehlerlos beim ersten Versuch.', test: s => s.perfect >= 1 },
+  { id: 'perfekt3', icon: '\u{1F48E}', name: 'Meisterschütze', how: 'Löse drei Runden fehlerlos.', test: s => s.perfect >= 3 },
+  { id: 'stern3', icon: '\u2B50', name: 'Dreifacher Stern', how: 'Hole in einer Station drei Sterne.', test: s => STATIONS.some(st => (s.stars[st.id] || 0) >= 3) },
+  { id: 'alle1', icon: '\u{1F5FA}', name: 'Entdeckerin', how: 'Bestehe jede Station mit mindestens einem Stern.', test: s => allSt(st => (s.stars[st.id] || 0) >= 1) },
+  { id: 'alle3', icon: '\u{1F31F}', name: 'Sternenhimmel', how: 'Hole in allen Stationen drei Sterne.', test: s => allSt(st => (s.stars[st.id] || 0) >= 3) },
+  { id: 'serie3', icon: '\u{1F525}', name: 'Dranbleiber', how: 'Halte eine Serie von 3 Tagen.', test: () => streakNow() >= 3 },
+  { id: 'serie7', icon: '\u{1F3C3}', name: 'Wochenläufer', how: 'Halte eine Serie von 7 Tagen.', test: () => streakNow() >= 7 },
+  { id: 'stufe3', icon: '\u{1F50B}', name: 'Aufgeladen', how: 'Erreiche Stufe 3.', test: s => levelOf(s.xp) >= 2 },
+  { id: 'stufe6', icon: '\u{1F451}', name: 'Höchste Stufe', how: 'Erreiche Stufe 6.', test: s => levelOf(s.xp) >= 5 },
+  { id: 'auffrischen', icon: '\u{1F9E0}', name: 'Gedächtnistrainer', how: 'Schliesse drei Auffrischrunden ab.', test: s => s.reviews >= 3 },
+  { id: 'challenge', icon: '\u{1F3C1}', name: 'Herausforderer', how: 'Spiele eine Challenge.', test: s => Object.keys(s.challenges).length >= 1 },
+  { id: 'challenge6', icon: '\u{1F3C6}', name: 'Challenge-Meister', how: 'Löse eine Challenge fehlerlos (6 von 6).', test: s => Object.keys(s.challenges).some(k => s.challenges[k].c === 6) },
+  { id: 'klasse', icon: '\u{1F465}', name: 'Teamplayer', how: 'Tritt einer Klasse bei.', test: s => !!s.classCode },
+  { id: 'runden10', icon: '\u{1F396}', name: 'Übungsmeister', how: 'Schliesse 10 Runden ab.', test: s => s.rounds >= 10 }
+];
+function checkTrophies() {
+  const fresh = [];
+  TROPHIES.forEach(t => { if (!state.trophies[t.id] && t.test(state)) { state.trophies[t.id] = Date.now(); fresh.push(t); } });
+  return fresh;
+}
+const newTrophyHtml = list => (list && list.length) ? list.map(t => `<div class="fb good"><div class="fbt"><span aria-hidden="true">${t.icon}</span> Neue Trophäe: ${t.name}</div><p class="small">${t.how}</p></div>`).join('') : '';
+function trophyBar() {
+  const n = TROPHIES.filter(t => state.trophies[t.id]).length, fresh = TROPHIES.filter(t => state.trophies[t.id] && !state.trophySeen[t.id]).length;
+  return `<button class="trophybar" data-act="trophies"><span class="ticon" aria-hidden="true">\u{1F3C6}</span><span class="tb"><b>Trophäen</b><small>${n} von ${TROPHIES.length} freigeschaltet</small></span>${fresh ? `<span class="tnew">${fresh} neu</span>` : ''}</button>`;
+}
+function viewTrophies() {
+  const n = TROPHIES.filter(t => state.trophies[t.id]).length;
+  return `
+  <main class="wrap">
+    <div class="rtop"><button class="btn sm" data-act="home">Zum Lernpfad</button><span class="mono small">${n} von ${TROPHIES.length}</span></div>
+    <h2 class="sumh">Trophäen</h2>
+    <p class="small">Schalte Trophäen frei, indem du lernst, übst und dranbleibst. Gesperrte Trophäen zeigen dir, was du dafür tun musst.</p>
+    <div class="tgrid">${TROPHIES.map(t => { const got = !!state.trophies[t.id]; return `<div class="trophy ${got ? 'got' : 'locked'}"><span class="ticon" aria-hidden="true">${got ? t.icon : '\u{1F512}'}</span><b>${t.name}</b><small>${t.how}</small>${got ? '<span class="tdone">freigeschaltet</span>' : ''}</div>`; }).join('')}</div>
+  </main>`;
+}
+
+function bumpXp(n) {
+  const wk = Math.floor((dayIdx() + 3) / 7);
+  if (state.weekKey !== wk) { state.weekKey = wk; state.weekXp = 0; }
+  state.xp += n; state.weekXp += n;
+}
+function levelOf(xp) {
+  let l = 0;
+  LEVELS.forEach((lv, i) => { if (xp >= lv.xp) l = i; });
+  return l;
+}
+function starsFor(c) { return c >= 6 ? 3 : c === 5 ? 2 : c === 4 ? 1 : 0; }
+function stationUnlocked(s) {
+  if (s.nr === 1) return true;
+  const prev = STATIONS[s.nr - 2];
+  return (state.stars[prev.id] || 0) >= 1;
+}
+function mastered(t) { const it = state.items[t.id]; return !!it && it.box >= 2; }
+function reviewPool() {
+  const pool = [];
+  STATIONS.forEach(s => { if (state.stars[s.id] !== undefined) s.items.forEach(t => pool.push(t)); });
+  return pool;
+}
+function dueCount() {
+  const now = Date.now();
+  return reviewPool().filter(t => { const it = state.items[t.id]; return !it || it.due <= now; }).length;
+}
+function stationOf(tpl) { return STATIONS.find(s => s.items.some(t => t.id === tpl.id)); }
+
+/* ---------- Runde ---------- */
+let R = null;
+let ui = { screen: 'home', formulas: false, confirmReset: false, chCode: '', chErr: '', clsErr: '', anim: true };
+
+function inst(tpl, retry) {
+  const d = tpl.make();
+  if (d.type === 'mc') d.shown = shuffle(d.options.map((t, i) => ({ t, ok: i === 0 })));
+  return { tpl, d, retry: !!retry, attempts: 0, done: false, sel: null, input: '', fb: null, firstLogged: false };
+}
+function buildChallenge(code) {
+  const m = /^([1-6])-/.exec(code); const N = m ? +m[1] : 6;
+  RNG = seeded(TOPIC.id + ':' + code);
+  try {
+    const used = new Set(), picks = [];
+    for (let i = 0; i < 6; i++) {
+      const st = STATIONS[i % N];
+      const pool = st.items.filter(t => !used.has(t.id));
+      const t = rnd(pool.length ? pool : st.items);
+      used.add(t.id); picks.push(t);
+    }
+    return shuffle(picks).map(t => inst(t));
+  } finally { RNG = Math.random; }
+}
+function startRound(what, code) {
+  if (what === 'challenge') {
+    R = { mode: 'challenge', code, st: null, queue: buildChallenge(code), i: 0, results: [], xp: 0, base: 6, t0: Date.now() };
+    ui.screen = 'round'; ui.formulas = false;
+    render();
+    return;
+  }
+  let tpls, st = null;
+  if (what === 'review') {
+    const now = Date.now();
+    tpls = reviewPool().map(t => {
+      const it = state.items[t.id] || { box: 0, due: 0 };
+      return { t, k: (it.due <= now ? 0 : 1) * 10 + it.box + Math.random() };
+    }).sort((a, b) => a.k - b.k).slice(0, ROUND_SIZE).map(x => x.t);
+    tpls = shuffle(tpls);
+  } else {
+    st = STATIONS.find(s => s.id === what);
+    tpls = shuffle(st.items);
+  }
+  R = { mode: what === 'review' ? 'review' : 'station', st, queue: tpls.map(t => inst(t)), i: 0, results: [], xp: 0, base: tpls.length };
+  ui.screen = 'round'; ui.formulas = false;
+  render();
+}
+function logFirst(q, ok) {
+  if (q.retry || q.firstLogged) return;
+  q.firstLogged = true;
+  R.results.push({ id: q.tpl.id, ok, topic: q.tpl.topic });
+  if (!ok && R.mode !== 'challenge') R.queue.push(inst(q.tpl, true));
+}
+function parseNum(s) {
+  s = String(s).trim().replace(/[\s\u202F\u2019']/g, '').replace(',', '.');
+  if (!/^-?\d*\.?\d+$/.test(s)) return NaN;
+  return parseFloat(s);
+}
+function answerMC(i) {
+  const q = R.queue[R.i];
+  if (q.done) return;
+  const ok = q.d.shown[i].ok;
+  q.sel = i; q.done = true;
+  logFirst(q, ok);
+  if (ok) {
+    const gain = q.retry ? 3 : 10; R.xp += gain;
+    q.fb = { kind: 'good', title: q.retry ? 'Richtig. Jetzt sitzt es.' : 'Richtig.', body: q.d.explain, xp: gain };
+  } else {
+    q.fb = { kind: 'bad', title: 'Nicht ganz.', body: q.d.explain + (q.retry || R.mode === 'challenge' ? '' : '<br><br>Diese Frage kommt am Ende der Runde noch einmal.') };
+  }
+  render('fb');
+}
+function checkNum() {
+  const q = R.queue[R.i];
+  if (q.done) return;
+  const el = document.getElementById('ans');
+  q.input = el ? el.value : q.input;
+  const x = parseNum(q.input);
+  if (isNaN(x)) { q.fb = { kind: 'warn', title: 'Gib eine Zahl ein.', body: 'Zum Beispiel 120 oder 2,5.' }; render('keep'); return; }
+  const d = q.d;
+  const ok = Math.abs(x - d.ans) <= Math.max(Math.abs(d.ans) * d.tolRel, d.tolAbs, 1e-9);
+  if (ok) {
+    q.done = true;
+    logFirst(q, q.attempts === 0);
+    const gain = q.retry ? 3 : (q.attempts === 0 ? 10 : 5); R.xp += gain;
+    q.fb = { kind: 'good', title: q.attempts === 0 ? 'Richtig.' : 'Richtig im zweiten Versuch.', body: d.explain, xp: gain };
+  } else if (q.attempts === 0 && R.mode !== 'challenge') {
+    q.attempts = 1;
+    logFirst(q, false);
+    q.fb = { kind: 'warn', title: 'Noch nicht.', body: 'Tipp: ' + d.hint + '<br>Du hast noch einen Versuch.' };
+  } else {
+    q.done = true;
+    logFirst(q, false);
+    q.fb = { kind: 'bad', title: 'Nicht ganz.', body: 'Richtig wäre ' + fmt(d.ans, 2) + ' ' + d.unit + '.<br>' + d.explain };
+  }
+  render('fb');
+}
+function nextQ() {
+  R.i += 1;
+  if (R.i >= R.queue.length) finishRound(); else render();
+}
+function finishRound() {
+  const before = state.xp;
+  const lvBefore = levelOf(before);
+  const c = R.results.slice(0, R.base).filter(r => r.ok).length;
+  const stars = starsFor(c);
+  let bonus = 0;
+  if (R.mode === 'station') bonus = stars === 3 ? 20 : stars === 2 ? 10 : stars === 1 ? 5 : 0;
+  else if (R.mode === 'challenge') bonus = c === 6 ? 20 : c >= 4 ? 10 : 0;
+  else bonus = c >= 5 ? 10 : 0;
+  // Karteikasten aktualisieren
+  const now = Date.now();
+  R.results.forEach(r => {
+    const it = state.items[r.id] || { box: 0, due: 0 };
+    it.box = r.ok ? Math.min(4, it.box + 1) : 0;
+    it.due = now + INTERVALS[it.box] * 86400000;
+    state.items[r.id] = it;
+  });
+  if (R.mode === 'station') state.stars[R.st.id] = Math.max(state.stars[R.st.id] || 0, stars);
+  let chInfo = null;
+  if (R.mode === 'challenge') {
+    const t = Math.max(1, Math.round((Date.now() - R.t0) / 1000));
+    const prev = state.challenges[R.code] || null;
+    if (!prev) state.challenges[R.code] = { c, t };
+    chInfo = { code: R.code, c, t, prev, line: `${state.nick} \u00B7 ${c} von 6 \u00B7 ${t} s \u00B7 Code ${R.code}` };
+  }
+  const gained = R.xp + bonus;
+  bumpXp(gained);
+  state.rounds += 1;
+  if (c === R.base) state.perfect = (state.perfect || 0) + 1;
+  if (R.mode === 'review') state.reviews = (state.reviews || 0) + 1;
+  touchStreak();
+  const newTrophies = checkTrophies();
+  save();
+  R.summary = {
+    c, stars, bonus, gained, base: R.base, ch: chInfo,
+    levelUp: levelOf(state.xp) > lvBefore ? levelOf(state.xp) : null, newTrophies,
+    missed: R.results.filter(r => !r.ok).map(r => r.topic)
+  };
+  if (R.mode === 'challenge') { BE.chBoard = null; BE.chStatus = ''; BE.chClasses = null; BE.chClsStatus = ''; }
+  ui.screen = 'summary';
+  render();
+  if (state.classCode) pushProgress();
+  if (R.mode === 'challenge') afterChallenge(chInfo);
+}
+
+/* ---------- Darstellung ---------- */
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const starTxt = n => '\u2605'.repeat(n) + '\u2606'.repeat(3 - n);
+
+function formulaCard() {
+  const rows = TOPIC.formulas;
+  return `<section class="card formulas" aria-label="${CARD}">
+    <div class="tag">${CARD}</div>
+    <table>${rows.map(r => `<tr><th scope="row">${r[0]}</th><td><span class="mono b">${r[1]}</span><br><span class="mono m">${r[2]}</span></td></tr>`).join('')}</table>
+  </section>`;
+}
+
+/* ---------- QR-Lernstand: Verschlüsselung (WebCrypto) ----------
+   Hybridverfahren: Die Schüler-App kennt nur den ÖFFENTLICHEN Schlüssel der Lehrperson.
+   Pro Code wird ein neues Schlüsselpaar erzeugt (ECDH P-256), daraus per HKDF ein AES-GCM-Schlüssel
+   abgeleitet und der Lernstand verschlüsselt. Nur der private Schlüssel der Prüf-App kann ihn öffnen.
+   Format: "LQ1." + base64url( [Version, Komprimiert] + 65 Byte Absender-Schlüssel + 12 Byte IV + Chiffrat )   */
+const LQ = (() => {
+  const te = new TextEncoder(), td = new TextDecoder();
+  const b64u = {
+    enc(u8) { let s = ''; for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(str) { let s = str.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+  };
+  async function pipe(u8, stream) {
+    const w = stream.writable.getWriter(); w.write(u8); w.close();
+    return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  }
+  const deflate = u8 => (typeof CompressionStream === 'undefined' ? Promise.resolve(null) : pipe(u8, new CompressionStream('deflate-raw')));
+  const inflate = u8 => pipe(u8, new DecompressionStream('deflate-raw'));
+  const ALGO = { name: 'ECDH', namedCurve: 'P-256' };
+  async function aesKey(secretBits, usage) {
+    const hk = await crypto.subtle.importKey('raw', secretBits, 'HKDF', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: te.encode('leistung-qr-v1') }, hk, { name: 'AES-GCM', length: 256 }, false, [usage]);
+  }
+  return {
+    b64u,
+    randomId(n) { return b64u.enc(crypto.getRandomValues(new Uint8Array(n))); },
+    // Lehrperson: Schlüsselpaar erzeugen. publicKey = Text für config.js, privateJwk bleibt in der Prüf-App.
+    async generateTeacherKeys() {
+      const kp = await crypto.subtle.generateKey(ALGO, true, ['deriveBits']);
+      return { publicKey: b64u.enc(new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey))), privateJwk: await crypto.subtle.exportKey('jwk', kp.privateKey) };
+    },
+    async encrypt(teacherPublicKey, obj) {
+      const raw = te.encode(JSON.stringify(obj));
+      let body = raw, flag = 0;
+      const z = await deflate(raw);
+      if (z && z.length < raw.length) { body = z; flag = 1; }
+      const pub = await crypto.subtle.importKey('raw', b64u.dec(teacherPublicKey), ALGO, false, []);
+      const eph = await crypto.subtle.generateKey(ALGO, true, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256);
+      const key = await aesKey(bits, 'encrypt');
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const header = new Uint8Array([1, flag]);
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: header }, key, body));
+      const ephRaw = new Uint8Array(await crypto.subtle.exportKey('raw', eph.publicKey));
+      const out = new Uint8Array(2 + 65 + 12 + ct.length);
+      out.set(header, 0); out.set(ephRaw, 2); out.set(iv, 67); out.set(ct, 79);
+      return 'LQ1.' + b64u.enc(out);
+    },
+    async decrypt(token, privateJwk) {
+      if (typeof token !== 'string' || token.slice(0, 4) !== 'LQ1.') throw new Error('Das ist kein Lernstand-Code dieser App.');
+      let data;
+      try { data = b64u.dec(token.slice(4).trim()); } catch (e) { throw new Error('Der Code ist beschädigt.'); }
+      if (data.length < 80 || data[0] !== 1) throw new Error('Unbekannte Version oder beschädigter Code.');
+      const header = data.slice(0, 2), ephRaw = data.slice(2, 67), iv = data.slice(67, 79), ct = data.slice(79);
+      try {
+        const priv = await crypto.subtle.importKey('jwk', privateJwk, ALGO, false, ['deriveBits']);
+        const eph = await crypto.subtle.importKey('raw', ephRaw, ALGO, false, []);
+        const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: eph }, priv, 256);
+        const key = await aesKey(bits, 'decrypt');
+        let body = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: header }, key, ct));
+        if (header[1] === 1) body = await inflate(body);
+        return JSON.parse(td.decode(body));
+      } catch (e) {
+        throw new Error('Der Code lässt sich mit deinem Schlüssel nicht öffnen. Er wurde verändert oder gehört zu einem anderen Schlüssel.');
+      }
+    }
+  };
+})();
+
+
+/* ---------- Backend (optional): Klassenwertung über Supabase ---------- */
+const CFG = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
+const BE = { client: null, board: null, boardAt: 0, loading: false, status: '', chBoard: null, chStatus: '', pushing: false, pushAgain: false };
+function beInit() {
+  try {
+    if (CFG.supabaseUrl && CFG.supabaseKey && window.supabase && window.supabase.createClient) {
+      BE.client = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true } });
+    }
+  } catch (e) { BE.client = null; }
+}
+const weekKey = () => Math.floor((dayIdx() + 3) / 7); // Wochen beginnen am Montag
+// Schulcode aus config.js: trennt die Wertung der Schule von anderen Schulen. Leer = keine Schulwertung.
+const schoolCode = () => { const s = String(CFG.schoolCode || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20); return s.length >= 3 ? s : ''; };
+// Klassen oder Gruppen, die im Duell verglichen werden (leer = alle Klassen der Schule)
+const duelArr = () => { const a = String(ui.duelInput || '').split(/[,;\s]+/).map(x => x.toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20)).filter(x => x.length >= 3); return a.length ? a.slice(0, 8) : null; };
+let authP = null;
+function ensureAuth() {
+  if (!authP) {
+    authP = (async () => {
+      const s = await BE.client.auth.getSession();
+      if (s && s.data && s.data.session) return;
+      const r = await BE.client.auth.signInAnonymously();
+      if (r.error) throw r.error;
+    })().catch(e => { authP = null; throw e; });
+  }
+  return authP;
+}
+async function rpc(name, args) {
+  await ensureAuth();
+  const r = await BE.client.rpc(name, args);
+  if (r.error) throw r.error;
+  return r.data;
+}
+const wait = ms => new Promise(res => setTimeout(res, ms));
+
+async function pushProgress() {
+  if (!BE.client || !state.classCode) return;
+  if (BE.pushing) { BE.pushAgain = true; return; }
+  BE.pushing = true;
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const wk = weekKey();
+        await rpc('submit_progress', {
+          p_topic: TOPIC.id, p_class: state.classCode, p_nick: state.nick, p_week: wk,
+          p_week_xp: state.weekKey === wk ? state.weekXp : 0,
+          p_total_xp: state.xp, p_level: levelOf(state.xp) + 1, p_school: schoolCode()
+        });
+        BE.status = ''; BE.boardAt = 0; BE.schoolAt = 0; BE.classesAt = 0;
+        break;
+      } catch (e) {
+        if (attempt === 0 && /zu schnell/.test(String(e && e.message))) { await wait(3500); continue; }
+        BE.status = 'Dein Punktestand konnte gerade nicht an die Klasse gesendet werden.';
+        break;
+      }
+    }
+  } finally {
+    BE.pushing = false;
+    if (BE.pushAgain) { BE.pushAgain = false; pushProgress(); }
+  }
+  paintBoard();
+}
+async function loadBoard(force) {
+  if (!BE.client || !state.classCode || BE.loading) return;
+  if (!force && BE.boardAt && Date.now() - BE.boardAt < 20000) { paintBoard(); return; }
+  BE.loading = true;
+  try {
+    const rows = await rpc('leaderboard', { p_topic: TOPIC.id, p_class: state.classCode, p_week: weekKey() });
+    BE.board = { rows, n: rows.length ? rows[0].n_players : 0, total: rows.length ? rows[0].total_week_xp : 0 };
+    BE.boardAt = Date.now(); BE.status = '';
+  } catch (e) { BE.status = 'Die Rangliste konnte gerade nicht geladen werden.'; }
+  BE.loading = false;
+  paintBoard();
+}
+async function loadSchool(force) {
+  if (!BE.client || !schoolCode() || !state.classCode || BE.loadingS) return;
+  if (!force && BE.schoolAt && Date.now() - BE.schoolAt < 20000) { paintBoard(); return; }
+  BE.loadingS = true;
+  try { BE.school = await rpc('school_leaderboard', { p_topic: TOPIC.id, p_school: schoolCode(), p_week: weekKey() }); BE.schoolAt = Date.now(); BE.status = ''; }
+  catch (e) { BE.status = 'Die Schulwertung konnte gerade nicht geladen werden.'; }
+  BE.loadingS = false;
+  paintBoard();
+}
+async function loadClasses(force) {
+  if (!BE.client || !schoolCode() || !state.classCode || BE.loadingC) return;
+  if (!force && BE.classesAt && Date.now() - BE.classesAt < 20000) { paintBoard(); return; }
+  BE.loadingC = true;
+  try { BE.classes = await rpc('class_ranking', { p_topic: TOPIC.id, p_school: schoolCode(), p_week: weekKey(), p_codes: duelArr() }); BE.classesAt = Date.now(); BE.status = ''; }
+  catch (e) { BE.status = 'Der Klassenvergleich konnte gerade nicht geladen werden.'; }
+  BE.loadingC = false;
+  paintBoard();
+}
+async function afterChallenge(ch) {
+  if (!BE.client || !state.classCode) return;
+  BE.chBoard = null; BE.chStatus = ''; BE.chClasses = null; BE.chClsStatus = '';
+  try {
+    if (!ch.prev) await rpc('submit_challenge', { p_topic: TOPIC.id, p_class: state.classCode, p_code: ch.code, p_nick: state.nick, p_correct: ch.c, p_seconds: Math.max(8, ch.t), p_school: schoolCode() });
+    BE.chBoard = await rpc('challenge_ranking', { p_topic: TOPIC.id, p_class: state.classCode, p_code: ch.code });
+  } catch (e) { BE.chStatus = 'Die Rangliste zu dieser Challenge konnte gerade nicht geladen werden.'; }
+  paintChBoard();
+  if (schoolCode()) {
+    try { BE.chClasses = await rpc('class_challenge_ranking', { p_topic: TOPIC.id, p_school: schoolCode(), p_code: ch.code, p_codes: duelArr() }); BE.chClsStatus = ''; }
+    catch (e) { BE.chClsStatus = 'Der Klassenvergleich konnte gerade nicht geladen werden.'; }
+    paintChBoard();
+  }
+}
+async function joinClass() {
+  const el = $id('clscode');
+  const code = normCode(el ? el.value : '');
+  if (code.length < 3) { ui.clsErr = 'Der Klassencode braucht mindestens 3 Zeichen.'; render('keep'); return; }
+  ui.clsErr = '';
+  state.classCode = code; save();
+  BE.board = null; BE.boardAt = Date.now();
+  render('keep');
+  await pushProgress();
+  loadBoard(true);
+}
+async function leaveClass(wipe) {
+  if (BE.client && (state.classCode || wipe)) { try { await rpc('leave_class', { p_topic: TOPIC.id }); } catch (e) { /* offline: Zeile bleibt, Lehrperson kann sie löschen */ } }
+  state.classCode = ''; save();
+  BE.board = null; BE.boardAt = 0; BE.school = null; BE.schoolAt = 0; BE.classes = null; BE.classesAt = 0; ui.bt = 'class';
+}
+
+function boardHtml() {
+  const b = BE.board;
+  if (!b) return '<p class="small">Rangliste wird geladen …</p>';
+  if (!b.rows.length) return '<p class="small">Diese Woche hat noch niemand Punkte. Spiele eine Runde, dann erscheinst du hier.</p>';
+  const per = Number(CFG.weeklyGoalPerPlayer) || 100;
+  const goal = Math.max(per, b.n * per), pct = Math.min(100, Math.round(b.total / goal * 100));
+  let prev = 0;
+  const rows = b.rows.map(r => {
+    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
+    prev = r.rank;
+    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}</span><span class="mono">${r.week_xp} XP</span></li>`;
+  }).join('');
+  const me = b.rows.find(r => r.is_me);
+  return `<ol class="board">${rows}</ol>
+    <p class="small">${me ? `Du bist Platz ${me.rank} von ${b.n}.` : ''} Gezeigt werden die Top 5 und dein eigener Platz. Die Wertung gilt von Montag bis Sonntag.</p>
+    <div class="goal"><div class="small">Klassenziel diese Woche: <b class="mono">${b.total} von ${goal} XP</b></div>
+    <div class="xpbar light" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Klassenziel"><div style="width:${pct}%"></div></div></div>`;
+}
+function chBoardHtml() {
+  if (BE.chStatus) return `<p class="small">${BE.chStatus}</p>`;
+  if (!BE.chBoard) return '<p class="small">Rangliste wird geladen …</p>';
+  const rows = BE.chBoard, n = rows.length ? rows[0].n_players : 0;
+  let prev = 0;
+  const li = rows.map(r => {
+    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
+    prev = r.rank;
+    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}</span><span class="mono">${r.correct}/6 \u00B7 ${r.seconds} s</span></li>`;
+  }).join('');
+  return `<div class="tag">Rangliste dieser Klasse (${n} ${n === 1 ? 'Ergebnis' : 'Ergebnisse'})</div><ol class="board">${li}</ol>`;
+}
+const people = n => n + (n === 1 ? ' Person' : ' Personen');
+function schoolHtml() {
+  const rows = BE.school;
+  if (!rows) return '<p class="small">Schulwertung wird geladen …</p>';
+  if (!rows.length) return '<p class="small">Diese Woche hat in der Schule noch niemand Punkte.</p>';
+  const n = rows[0].n_players; let prev = 0;
+  const li = rows.map(r => {
+    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
+    prev = r.rank;
+    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}<small>${esc(r.class_code)}</small></span><span class="mono">${r.week_xp} XP</span></li>`;
+  }).join('');
+  const me = rows.find(r => r.is_me);
+  return `<ol class="board">${li}</ol><p class="small">${me ? `Du bist Platz ${me.rank} von ${n}. ` : ''}Schulinterne Wertung: Top 10 und dein Platz. Gezeigt werden nur Zufallsnamen und der Klassencode.</p>`;
+}
+function classesHtml() {
+  const rows = BE.classes;
+  const form = `<div class="ansrow chrow"><input id="duelcodes" class="numin" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="80" placeholder="Duell: z. B. KL-7A, KL-7B" aria-label="Klassen oder Gruppen für das Duell" value="${esc(ui.duelInput || '')}"><button class="btn sm" data-act="duelgo">Vergleichen</button></div>
+    <p class="small">Leer lassen: alle Klassen und Gruppen der Schule. Oder gib zwei bis acht Klassencodes ein.</p>`;
+  if (!rows) return form + '<p class="small">Klassenvergleich wird geladen …</p>';
+  if (!rows.length) return form + '<p class="small">Für diese Auswahl gibt es diese Woche noch keine Punkte.</p>';
+  let prev = 0;
+  const li = rows.map(r => {
+    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
+    prev = r.rank;
+    return gap + `<li class="${r.is_mine ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.class_code)}${r.is_mine ? ' (deine Klasse)' : ''}<small>${people(r.n_players)}${r.n_players < 3 ? ' \u00B7 wenige Teilnehmende' : ''}</small></span><span class="mono">${fmt(Number(r.avg_xp), 1)} XP pro Person</span></li>`;
+  }).join('');
+  return form + `<ol class="board">${li}</ol><p class="small">Verglichen werden die Wochenpunkte pro Person. So haben grosse und kleine Klassen oder Gruppen die gleiche Chance.</p>`;
+}
+function chClsHtml() {
+  if (!BE.client || !schoolCode() || !state.classCode) return '';
+  if (BE.chClsStatus) return `<p class="small">${BE.chClsStatus}</p>`;
+  if (!BE.chClasses) return '<p class="small">Klassenvergleich wird geladen …</p>';
+  const rows = BE.chClasses;
+  if (!rows.length) return '';
+  let prev = 0;
+  const li = rows.map(r => {
+    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
+    prev = r.rank;
+    return gap + `<li class="${r.is_mine ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.class_code)}${r.is_mine ? ' (deine Klasse)' : ''}<small>${people(r.n_players)}</small></span><span class="mono">${fmt(Number(r.avg_correct), 1)}/6 \u00B7 ${fmt(Number(r.avg_seconds), 0)} s</span></li>`;
+  }).join('');
+  return `<div class="tag">Klassenduell bei dieser Challenge</div><ol class="board">${li}</ol><p class="small">Verglichen werden die Durchschnitte pro Person. Spielen mehrere Klassen denselben Code, siehst du, wer vorn liegt.</p>`;
+}
+function boardTabHtml() { return !schoolCode() ? boardHtml() : ui.bt === 'school' ? schoolHtml() : ui.bt === 'duel' ? classesHtml() : boardHtml(); }
+function tabsHtml() {
+  if (!schoolCode()) return '';
+  const t = [['class', 'Klasse'], ['school', 'Schule'], ['duel', 'Klassenduell']];
+  return `<div class="seg3" role="group" aria-label="Wertung">${t.map(x => `<button class="btn sm${(ui.bt || 'class') === x[0] ? ' on' : ''}" data-act="bt" data-t="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+}
+function paintBoard() {
+  const el = $id('board'); if (el) el.innerHTML = boardTabHtml();
+  const st = $id('bestatus'); if (st) st.textContent = BE.status;
+}
+function paintChBoard() {
+  const el = $id('chboard'); if (el) el.innerHTML = chBoardHtml();
+  const ec = $id('chcls'); if (ec) ec.innerHTML = chClsHtml();
+}
+function classCard() {
+  if (!BE.client) return '';
+  if (!state.classCode) {
+    return `<article class="card clsc" style="--i:7">
+      <div class="tag">Meine Klasse</div>
+      <h3>Klassenwertung</h3>
+      <p class="small">Gib den Klassencode ein, den du von deiner Lehrperson bekommst. Dann siehst du die Wochenwertung deiner Klasse. Gespeichert werden nur dein Zufallsname und dein Punktestand.</p>
+      <div class="ansrow chrow"><input id="clscode" class="numin mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="Klassencode" aria-label="Klassencode"></div>
+      ${ui.clsErr ? `<p class="errtxt" role="alert">${ui.clsErr}</p>` : ''}
+      <button class="btn btn-primary block" data-act="joinclass">Klasse beitreten</button>
+    </article>`;
+  }
+  return `<article class="card clsc" style="--i:7">
+      <div class="tag">Meine Klasse</div>
+      <h3>Klasse ${esc(state.classCode)}</h3>
+      ${tabsHtml()}
+      <div id="board">${boardTabHtml()}</div>
+      <p class="errtxt" id="bestatus" role="status">${BE.status || ''}</p>
+      <div class="btnrow"><button class="btn sm" data-act="refreshboard">Aktualisieren</button><button class="btn sm" data-act="leaveclass">Klasse verlassen</button></div>
+      <p class="small">Beim Verlassen werden deine Daten auf dem Server gelöscht.</p>
+    </article>`;
+}
+
+
+/* ---------- Maskottchen Watti und Lernhilfen ---------- */
+const scStyle = nr => `--sc:var(--st-${nr})`;
+function watti(lvl, mood, cls) {
+  return `<div class="watti ${cls || ''}" data-mood="${mood || 'happy'}" style="--lvl:${Math.max(14, Math.min(100, Math.round(lvl)))}%" aria-hidden="true"><div class="cap"></div><div class="body"><div class="fill"></div><div class="face"><div class="eyes"><i class="eye"></i><i class="eye"></i></div><b class="mouth"></b></div></div></div>`;
+}
+const WATTI_TIPS = TOPIC.tips.concat(['Erst lernen, dann üben. Das lohnt sich.', 'Fehler sind okay. Sie kommen wieder, bis es sitzt.', 'Eine Runde pro Tag hält deine Serie am Laufen.', 'Tipp: Schau bei Aufgaben zuerst, welche Einheit gesucht ist.']);
+let tipI = 0;
+function introCard() {
+  return `<article class="card intro" style="--i:0"><div class="tag">So geht's</div>
+    <div class="steps3"><div class="step3"><b>1</b><span>Lernen</span><small>Karten und Experimente</small></div><div class="step3"><b>2</b><span>Üben</span><small>Aufgaben mit Tipps</small></div><div class="step3"><b>3</b><span>Challenge</span><small>Gleiche Fragen für alle</small></div></div>
+    <button class="btn sm" data-act="introdone">Verstanden</button></article>`;
+}
+function workedHtml(w, shown) {
+  const steps = w.steps.map((s, i) => `<li class="${i <= shown ? '' : 'hid'}"><div><div class="wt">${s[0]}</div><div class="wm mono">${s[1]}</div></div></li>`).join('');
+  return `<div class="worked"><div class="wgiven">${w.given}</div><ol class="wsteps">${steps}</ol><button class="btn sm" data-act="wstep" ${shown >= w.steps.length - 1 ? 'disabled' : ''}>${shown >= w.steps.length - 1 ? 'Das war es' : 'Nächster Schritt'}</button></div>`;
+}
+function openExplain() {
+  const q = R.queue[R.i], el = $id('ans');
+  if (el) q.input = el.value;
+  const st = stationOf(q.tpl), idx = st.lesson.findIndex(c => c.h === q.tpl.learn);
+  L = { st, i: Math.max(0, idx), dir: 1, shown: {}, sel: {}, wk: {}, fromRound: true };
+  ui.screen = 'lesson'; ui.formulas = false;
+  render();
+}
+
+/* ---------- Lernstand als verschlüsselter QR-Code ---------- */
+const qrAvailable = () => !!(CFG.teacherKey && window.qrcode && window.crypto && window.crypto.subtle);
+function lernstandPayload() {
+  const wkNow = Math.floor((dayIdx() + 3) / 7);
+  return {
+    v: 1, tp: TOPIC.id, i: Math.floor(Date.now() / 1000), id: LQ.randomId(8),
+    n: state.nick, r: (state.realName || '').trim(), k: state.classCode || '',
+    x: state.xp, w: state.weekKey === wkNow ? state.weekXp : 0, l: levelOf(state.xp) + 1, ro: state.rounds, st: streakNow(),
+    s: STATIONS.map(st => (state.stars[st.id] === undefined ? '-' : String(state.stars[st.id]))).join(''),
+    ls: STATIONS.map(st => (state.lessons[st.id] ? '1' : '0')).join(''),
+    ch: Object.keys(state.challenges).slice(-3).map(k => [k, state.challenges[k].c, state.challenges[k].t])
+  };
+}
+async function showQr() {
+  ui.screen = 'qr'; ui.qr = { state: 'loading' };
+  render();
+  try {
+    const token = await LQ.encrypt(CFG.teacherKey, lernstandPayload());
+    const q = window.qrcode(0, 'M'); q.addData(token); q.make();
+    ui.qr = { state: 'ok', svg: q.createSvgTag({ cellSize: 4, margin: 4, scalable: true }), until: Date.now() + 600000 };
+  } catch (e) { ui.qr = { state: 'err' }; }
+  if (ui.screen === 'qr') render('keep');
+}
+function qrCard() {
+  if (!qrAvailable()) return '';
+  return `<article class="card qrc" style="--i:9">
+      <div class="tag">Mein Lernstand</div>
+      <h3>QR-Code für die Lehrperson</h3>
+      <p class="small">Dein Punktestand wird verschlüsselt in einen QR-Code gepackt. Nur die Prüf-App deiner Lehrperson kann ihn lesen. Es wird nichts hochgeladen.</p>
+      <div class="ansrow chrow"><input id="realname" class="numin txtin" type="text" autocomplete="off" maxlength="30" placeholder="Dein Name (freiwillig)" value="${esc(state.realName || '')}" aria-label="Dein Name für die Lehrperson"></div>
+      <p class="small">Der Name steht nur im verschlüsselten Code, nirgends sonst.</p>
+      <button class="btn btn-primary block" data-act="showqr">QR-Code anzeigen</button>
+    </article>`;
+}
+function viewQr() {
+  const q = ui.qr || { state: 'loading' };
+  const body = q.state === 'ok' ? `<div class="qrbox" id="qrbox" role="img" aria-label="QR-Code mit deinem verschlüsselten Lernstand">${q.svg}</div><p class="countdown">Gültig noch <b class="mono" id="qrleft">10:00</b></p>`
+    : q.state === 'err' ? '<p class="errtxt" role="alert">Der Code konnte nicht erzeugt werden. Dein Browser unterstützt die Verschlüsselung vielleicht nicht.</p>' : '<p class="small">Code wird erzeugt …</p>';
+  return `
+  <main class="wrap qrscreen">
+    <section class="card">
+      <div class="tag">Mein Lernstand</div>
+      <h2 class="sumh">QR-Code</h2>
+      ${body}
+      <p class="small">Zeige den Code deiner Lehrperson. Er ist verschlüsselt: Nur die Prüf-App deiner Lehrperson kann ihn lesen. Es wird nichts hochgeladen. Wenn der Code abläuft, erzeugst du einfach einen neuen.</p>
+    </section>
+    <button class="btn btn-primary block" data-act="showqr">Neuen Code erzeugen</button>
+    <button class="btn block" data-act="home">Zurück</button>
+  </main>`;
+}
+
+/* ---------- Lektion ---------- */
+let L = null;
+function startLesson(id) {
+  const st = STATIONS.find(s => s.id === id);
+  L = { st, i: 0, dir: 1, shown: {}, sel: {}, wk: {}, fromRound: false };
+  ui.screen = 'lesson'; ui.formulas = false;
+  render();
+}
+function lessonGo(d) {
+  const n = L.st.lesson.length;
+  L.i = Math.max(0, Math.min(n - 1, L.i + d)); L.dir = d;
+  render();
+}
+function finishLesson() {
+  const id = L.st.id, first = !state.lessons[id], lvB = levelOf(state.xp);
+  let gain = 0;
+  if (first) { state.lessons[id] = true; gain = 15; bumpXp(gain); touchStreak(); save(); pushProgress(); }
+  L.gain = gain; L.levelUp = levelOf(state.xp) > lvB;
+  L.newTrophies = checkTrophies(); save();
+  ui.screen = 'lessondone';
+  render();
+}
+
+/* ---------- Challenge ---------- */
+const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20);
+function startChallenge() {
+  const el = $id('chcode');
+  const code = normCode(el ? el.value : ui.chCode);
+  ui.chCode = code;
+  if (code.length < 3) { ui.chErr = 'Der Code braucht mindestens 3 Zeichen, zum Beispiel 4-FUNKE.'; render('keep'); return; }
+  ui.chErr = '';
+  startRound('challenge', code);
+}
+
+/* ---------- Animationen ---------- */
+function countUp(el, to, pre, suf) {
+  tween(0, to, 900, v => { el.textContent = pre + Math.round(v) + suf; });
+}
+function confetti(host) {
+  if (!host || reduced()) return;
+  const cols = ['var(--pop-yellow)', 'var(--pop-pink)', 'var(--pop-cyan)', 'var(--pop-green)', 'var(--primary)'];
+  const box = document.createElement('div');
+  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 44; i++) {
+    const s = document.createElement('span');
+    const a = Math.random() * Math.PI * 2, d = 80 + Math.random() * 140;
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    s.style.setProperty('--dy', (Math.sin(a) * d - 60) + 'px');
+    s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+    s.style.background = cols[i % cols.length];
+    s.style.animationDelay = (Math.random() * 120) + 'ms';
+    box.appendChild(s);
+  }
+  host.appendChild(box);
+  setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 1700);
+}
+
+/* ---------- Ansichten ---------- */
+function viewHome() {
+  const lv = levelOf(state.xp);
+  const cur = LEVELS[lv], nxt = LEVELS[lv + 1];
+  const pct = nxt ? Math.round((state.xp - cur.xp) / (nxt.xp - cur.xp) * 100) : 100;
+  const sn = streakNow();
+  const diff = state.lastDay === null ? null : dayIdx() - state.lastDay;
+  let streakNote = 'Eine Runde pro Tag hält deine Serie am Laufen. Ein freier Tag ist erlaubt.';
+  if (sn > 0 && diff >= 1) streakNote = diff === 1 ? 'Mach heute eine Runde, dann läuft deine Serie weiter.' : 'Letzte Chance: Mach heute eine Runde, sonst startet die Serie neu.';
+  if (sn === 0 && state.lastDay !== null) streakNote = 'Die Serie ist unterbrochen. Mit einer Runde startest du neu.';
+
+  const due = dueCount();
+  let nudge = null;
+  for (const s0 of STATIONS) {
+    if (!state.lessons[s0.id]) { nudge = 'learn:' + s0.id; break; }
+    if (state.stars[s0.id] === undefined) { nudge = 'start:' + s0.id; break; }
+  }
+  const sparks = [['8%', '30%', '16px', 'var(--pop-pink)', '8s'], ['70%', '12%', '10px', 'var(--pop-yellow)', '10s'], ['90%', '60%', '18px', 'var(--pop-cyan)', '9s'], ['40%', '78%', '12px', 'var(--pop-green)', '11s'], ['22%', '8%', '9px', 'var(--pop-yellow)', '7s'], ['58%', '45%', '14px', 'var(--pop-pink)', '12s']]
+    .map(p => `<span class="spark" aria-hidden="true" style="--x:${p[0]};--y:${p[1]};--s:${p[2]};--c:${p[3]};--t:${p[4]}"></span>`).join('');
+  const cards = STATIONS.map((s, idx) => {
+    const open = true;
+    const canPractice = stationUnlocked(s) || !!state.lessons[s.id];
+    const stars = state.stars[s.id];
+    const done = stars !== undefined;
+    const learned = !!state.lessons[s.id];
+    const mcount = s.items.filter(mastered).length;
+    const segs = s.items.map(t => `<span class="seg${mastered(t) ? ' on' : ''}"></span>`).join('');
+    return `<article class="card st${open ? '' : ' locked'}" style="--i:${idx};${scStyle(s.nr)}">
+      <div class="num mono" aria-hidden="true">${s.nr}</div>
+      <div class="stbody">
+        <h3>${s.title}</h3>
+        <div class="mono sub">${s.sub}</div>
+        ${open ? `<div class="mast" role="img" aria-label="${mcount} von ${s.items.length} Aufgabentypen sicher">${segs}</div>
+        <div class="starsrow"><span class="stars" aria-label="${stars || 0} von 3 Sternen">${starTxt(stars || 0)}</span><span class="small">${learned ? 'Lektion gelesen' : 'Lektion offen'} \u00B7 ${done ? 'geübt' : canPractice ? 'noch nicht geübt' : 'Üben nach der Lektion'}</span></div>`
+        : `<p class="small">Schliesse Station ${s.nr - 1} mit mindestens einem Stern ab, um diese freizuschalten.</p>`}
+      </div>
+      ${open ? `<div class="acts"><button class="btn ${learned ? '' : 'btn-primary'}${nudge === 'learn:' + s.id ? ' nudge' : ''}" data-act="learn" data-st="${s.id}">Lernen</button><button class="btn ${learned && !done ? 'btn-primary' : ''}${nudge === 'start:' + s.id ? ' nudge' : ''}" data-act="start" data-st="${s.id}" ${canPractice ? '' : 'disabled'}>Üben</button></div>` : ''}
+    </article>`;
+  }).join('');
+
+  const rev = reviewPool().length ? `<article class="card review" style="--i:6">
+      <div class="stbody">
+        <h3>Auffrischen</h3>
+        <p class="small">${due > 0 ? `${due} Aufgabentypen sind zum Wiederholen fällig. Gemischte Runde aus allen Stationen, die du schon gespielt hast.` : 'Gerade ist nichts fällig. Aufgaben kommen nach ein paar Tagen automatisch zurück.'}</p>
+      </div>
+      <button class="btn ${due > 0 ? 'btn-primary' : ''}" data-act="review">Runde starten</button>
+    </article>` : '';
+
+  const chKeys = Object.keys(state.challenges).slice(-3).reverse();
+  const chal = `<article class="card chal" style="--i:8">
+      <div class="tag">Challenge und Duell</div>
+      <h3>Gleiche Fragen, fairer Vergleich</h3>
+      <p class="small">Alle mit demselben Code bekommen dieselben 6 Fragen. Deine Lehrperson kann einen Code an die Tafel schreiben, oder du forderst jemanden heraus. Eine Ziffer vorne (zum Beispiel 3-ABCD) beschränkt die Fragen auf die Stationen 1 bis 3.</p>
+      <div class="ansrow chrow"><input id="chcode" class="numin mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="z. B. 4-FUNKE" value="${esc(ui.chCode || '')}" aria-label="Challenge-Code"><button class="btn" data-act="rcode">Zufall</button></div>
+      ${ui.chErr ? `<p class="errtxt" role="alert">${ui.chErr}</p>` : ''}
+      <button class="btn btn-primary block" data-act="challenge">Challenge starten</button>
+      <p class="small nickrow">Dein Zufallsname: <span class="mono b">${state.nick}</span> <button class="btn sm" data-act="nick">Neu würfeln</button></p>
+      ${chKeys.length ? `<ul class="chlist">${chKeys.map(k => `<li><span class="mono">${esc(k)}</span>: ${state.challenges[k].c} von 6 in ${state.challenges[k].t} s</li>`).join('')}</ul>` : ''}
+    </article>`;
+
+  const initW = ui.anim ? 0 : pct;
+  return `
+  <header class="top">
+    ${sparks}
+    <div class="topbar">
+      <div class="logochip"><img src="logo.png" alt="Sekundarschule Halingen"></div>
+      <span class="tag inv">${TOPIC.tag}</span>
+    </div>
+    <div class="hero"><div class="herotxt"><h1 class="${TOPIC.title.length > 14 ? 'long' : ''}">${TOPIC.title}</h1><p class="lead">${TOPIC.lead}</p><p class="bubble" id="bubble" aria-live="polite"></p></div>
+      <button class="wbtn" data-act="poke" aria-label="Watti anstupsen">${watti(pct, 'happy', 'big')}</button></div>
+    <div class="stats">
+      <div class="stat"><span class="k">Stufe ${lv + 1}</span><span class="v">${cur.name}</span><span class="mono s">${cur.pw}</span></div>
+      <div class="stat"><span class="k">Punkte</span><span class="v mono" data-count="${state.xp}" data-suffix=" XP">${state.xp} XP</span><span class="mono s">${nxt ? 'bis ' + nxt.xp : 'Höchste Stufe'}</span></div>
+      <div class="stat"><span class="k">Serie</span><span class="v mono">${sn} ${sn === 1 ? 'Tag' : 'Tage'}</span><span class="mono s">Schonfrist 1 Tag</span></div>
+    </div>
+    <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Fortschritt zur nächsten Stufe"><div data-w="${pct}" style="width:${initW}%"></div></div>
+  </header>
+  <main class="wrap">
+    <p class="small streaknote">${streakNote}</p>
+    ${trophyBar()}
+    <div class="row"><h2>Dein Lernpfad</h2><button class="btn sm" data-act="formulas">${ui.formulas ? CARD + ' zu' : CARD}</button></div>
+    ${ui.formulas ? formulaCard() : ''}
+    ${state.introDone ? '' : introCard()}
+    <div class="path">${cards}${rev}${classCard()}${qrCard()}${chal}</div>
+    <footer class="foot">
+      ${'weeklyGoalPerPlayer' in CFG ? `<p class="small"><a href="lernapp.html">Alle Kapitel</a> \u00B7 <a href="nut.html">Lernlandkarte NuT</a>${TOPIC.other ? ` \u00B7 Weitere App: <a href="${TOPIC.other.href}">${TOPIC.other.title}</a>` : ''}</p>` : ''}
+      <p class="small">Dein Fortschritt wird nur auf diesem Gerät im Browser gespeichert${memoryOnly ? ' (Speichern ist hier gerade nicht möglich, der Fortschritt geht beim Schliessen verloren)' : ''}. Der Zufallsname ist nirgends sonst hinterlegt.</p>
+      <button class="btn sm" data-act="reset">${ui.confirmReset ? 'Sicher? Nochmals tippen zum Löschen' : 'Fortschritt zurücksetzen'}</button>
+    </footer>
+  </main>`;
+}
+
+function viewRound() {
+  const q = R.queue[R.i], d = q.d;
+  const last = R.i === R.queue.length - 1;
+  const pct = Math.round(R.i / R.queue.length * 100);
+  const label = R.mode === 'review' ? 'Auffrischen' : R.mode === 'challenge' ? 'Challenge \u00B7 ' + R.code : `Station ${R.st.nr} \u00B7 ${R.st.title}`;
+  let body = '';
+  if (d.type === 'mc') {
+    body = `<div class="opts" role="group" aria-label="Antworten">` + d.shown.map((o, i) => {
+      let cls = 'opt';
+      if (q.done) { if (o.ok) cls += ' good'; else if (q.sel === i) cls += ' bad'; }
+      return `<button class="${cls}" style="--i:${i}" data-act="opt" data-i="${i}" ${q.done ? 'disabled' : ''}><span class="ltr mono" aria-hidden="true">${'ABCD'[i]}</span><span>${o.t}</span></button>`;
+    }).join('') + `</div>`;
+  } else {
+    const err = q.fb && (q.fb.kind === 'warn' || q.fb.kind === 'bad') ? ' err' : '';
+    body = `<label class="sr" for="ans">Deine Antwort in ${d.unit}</label>
+      <div class="ansrow"><input id="ans" class="numin mono${err}" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Zahl" value="${esc(q.input)}" ${q.done ? 'disabled' : ''}><span class="unitl mono">${d.unit}</span></div>
+      <p class="small">Dezimalzahlen mit Komma oder Punkt.</p>
+      ${q.done ? '' : `<button class="btn btn-primary block" data-act="check">${q.attempts ? 'Nochmals prüfen' : 'Prüfen'}</button>`}`;
+  }
+  const canExplain = q.fb && (q.fb.kind === 'bad' || q.fb.kind === 'warn') && q.fb.title !== 'Gib eine Zahl ein.' && R.mode !== 'challenge' && q.tpl.learn;
+  const fb = q.fb ? `<div class="fb ${q.fb.kind}" role="status" aria-live="polite">${q.fb.xp ? `<span class="xppop">+${q.fb.xp} XP</span>` : ''}<div class="fbt">${q.fb.title}</div><div class="fbb">${q.fb.body}</div>${canExplain ? '<button class="btn sm fbx" data-act="explain">Erklärung ansehen</button>' : ''}</div>` : '';
+  const mood = !q.fb ? 'happy' : q.fb.kind === 'good' ? 'cheer' : q.fb.kind === 'bad' ? 'sad' : 'think';
+  const nxt = q.done ? `<button class="btn btn-primary block" data-act="next">${last ? 'Ergebnis ansehen' : 'Weiter'}</button>` : '';
+  return `
+  <main class="wrap round">
+    <div class="rtop">
+      <button class="btn sm" data-act="quit">Beenden</button>
+      <span class="mono small">Frage ${Math.min(R.i + 1, R.queue.length)} von ${R.queue.length}</span>
+      <button class="btn sm" data-act="formulas">${ui.formulas ? CARD + ' zu' : CARD}</button>
+    </div>
+    <div class="xpbar light" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Fortschritt in dieser Runde"><div style="width:${pct}%"></div></div>
+    ${ui.formulas ? formulaCard() : ''}
+    <section class="card qcard" style="${R.st ? scStyle(R.st.nr) : '--sc:var(--primary)'}">
+      ${watti(pct, mood, 'mini')}
+      <div class="tags"><span class="tag">${label}</span>${d.type === 'num' && q.tpl.ext ? '<span class="badge">Erweiterung</span>' : ''}${q.retry ? '<span class="badge warn">Zweiter Anlauf</span>' : ''}${R.mode === 'challenge' ? '<span class="badge warn">Zeit läuft, 1 Versuch</span>' : ''}</div>
+      <h2 class="q">${d.q}</h2>
+      ${body}
+    </section>
+    ${fb}
+    ${nxt}
+  </main>`;
+}
+
+function viewSummary() {
+  const s = R.summary;
+  const lv = LEVELS[levelOf(state.xp)];
+  if (R.mode === 'challenge') {
+    const ch = s.ch;
+    const headline = ch.c === 6 ? 'Fehlerlos.' : ch.c >= 4 ? 'Gut gemacht.' : 'Das geht noch besser.';
+    return `
+  <main class="wrap summary">
+    <section class="card">
+      <div class="sumw">${watti(100, ch.c >= 4 ? 'cheer' : 'think', 'big')}</div>
+      <div class="tag">Challenge \u00B7 Code ${esc(ch.code)}</div>
+      <h2 class="sumh">${headline}</h2>
+      <p class="lead2"><span class="mono b">${ch.c} von 6</span> richtig in <span class="mono b">${ch.t} s</span>.</p>
+      <div class="resline mono" id="resline">${esc(ch.line)}</div>
+      <button class="btn sm" data-act="copy">Ergebnis kopieren</button>
+      <p class="small" id="copymsg" aria-live="polite"></p>
+      <p class="small">${ch.prev ? `Dein erster Versuch mit diesem Code: ${ch.prev.c} von 6 in ${ch.prev.t} s. Für den Vergleich zählt der erste Versuch.` : 'Das ist dein erster Versuch mit diesem Code. Er zählt für den Vergleich.'}</p>
+      <p class="small">So wird verglichen: Wer mehr richtig hat, liegt vorne. Bei gleich vielen richtigen Antworten gewinnt die kürzere Zeit.</p>
+      ${BE.client && state.classCode ? `<div id="chboard" class="chboard">${chBoardHtml()}</div>` : ''}
+      ${BE.client && state.classCode && schoolCode() ? `<div id="chcls" class="chboard">${chClsHtml()}</div>` : ''}
+      ${BE.client && !state.classCode ? '<p class="small">Tritt auf dem Lernpfad einer Klasse bei, dann siehst du hier die Rangliste deiner Klasse.</p>' : ''}
+      <div class="gain"><span class="mono b">+${s.gained} XP</span><span class="small">${s.bonus ? `davon ${s.bonus} Bonus` : 'kein Bonus'}</span></div>
+      ${s.levelUp !== null ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
+      ${newTrophyHtml(s.newTrophies)}
+      ${s.missed.length ? `<div class="miss"><div class="tag">Das solltest du nochmals anschauen</div><ul>${[...new Set(s.missed)].map(t => `<li>${t}</li>`).join('')}</ul></div>` : ''}
+    </section>
+    <button class="btn block" data-act="challenge-again" data-code="${esc(ch.code)}">Nochmals mit diesem Code (zählt nicht)</button>
+    <button class="btn block" data-act="home">Zum Lernpfad</button>
+  </main>`;
+  }
+  const stationNext = R.mode === 'station' && R.st.nr < STATIONS.length ? STATIONS[R.st.nr] : null;
+  const canNext = !!stationNext;
+  const headline = R.mode === 'station'
+    ? (s.stars === 3 ? 'Stark. Alles sitzt.' : s.stars >= 1 ? 'Geschafft.' : 'Noch nicht ganz.')
+    : 'Runde beendet.';
+  const sub = R.mode === 'station' && s.stars === 0 ? 'Für den ersten Stern brauchst du mindestens 4 von 6 beim ersten Versuch. Schau dir die Lektion nochmals an, dann klappt es.' : '';
+  const stars = R.mode === 'station' ? `<div class="bigstars" aria-label="${s.stars} von 3 Sternen">${[0, 1, 2].map(i => `<span class="${i < s.stars ? 'on' : ''}" style="--d:${i * 220}ms">${i < s.stars ? '\u2605' : '\u2606'}</span>`).join('')}</div>` : '';
+  return `
+  <main class="wrap summary">
+    <section class="card">
+      <div class="sumw">${watti(100, R.mode === 'station' && s.stars === 0 ? 'think' : 'cheer', 'big')}</div>
+      <div class="tag">${R.mode === 'station' ? 'Station ' + R.st.nr + ' \u00B7 ' + R.st.title : 'Auffrischen'}</div>
+      <h2 class="sumh">${headline}</h2>
+      ${stars}
+      <p class="lead2"><span class="mono b">${s.c} von ${s.base}</span> beim ersten Versuch richtig.</p>
+      ${sub ? `<p class="small">${sub}</p>` : ''}
+      <div class="gain"><span class="mono b" data-count="${s.gained}" data-prefix="+" data-suffix=" XP">+${s.gained} XP</span><span class="small">${s.bonus ? `davon ${s.bonus} Bonus` : 'kein Bonus in dieser Runde'}</span></div>
+      <p class="small">Serie: <span class="mono b">${streakNow()} ${streakNow() === 1 ? 'Tag' : 'Tage'}</span></p>
+      ${s.levelUp !== null ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
+      ${newTrophyHtml(s.newTrophies)}
+      ${s.missed.length ? `<div class="miss"><div class="tag">Das kommt wieder</div><ul>${[...new Set(s.missed)].map(t => `<li>${t}</li>`).join('')}</ul></div>` : ''}
+    </section>
+    ${canNext ? `<button class="btn btn-primary block" data-act="learn" data-st="${stationNext.id}">Weiter zu Station ${stationNext.nr}: lernen</button>` : ''}
+    ${R.mode === 'station' ? `<button class="btn block" data-act="start" data-st="${R.st.id}">Diese Station nochmals</button>` : `<button class="btn block" data-act="review">Noch eine Auffrischrunde</button>`}
+    ${R.mode === 'station' && s.stars === 0 ? `<button class="btn block" data-act="learn" data-st="${R.st.id}">Lektion nochmals ansehen</button>` : ''}
+    <button class="btn block" data-act="home">Zum Lernpfad</button>
+  </main>`;
+}
+
+function viewLesson() {
+  const n = L.st.lesson.length, c = L.st.lesson[L.i], last = L.i === n - 1;
+  let extra = '';
+  if (c.check) {
+    if (!L.shown[L.i]) L.shown[L.i] = shuffle(c.check.options.map((t, i) => ({ t, ok: i === 0 })));
+    const sel = L.sel[L.i], done = sel !== undefined, sh = L.shown[L.i];
+    extra = `<h3 class="q">${c.check.q}</h3><div class="opts" role="group" aria-label="Antworten">` + sh.map((o, i) => {
+      let cls = 'opt';
+      if (done) { if (o.ok) cls += ' good'; else if (sel === i) cls += ' bad'; }
+      return `<button class="${cls}" data-act="lopt" data-i="${i}" ${done ? 'disabled' : ''}><span class="ltr mono" aria-hidden="true">${'ABCD'[i]}</span><span>${o.t}</span></button>`;
+    }).join('') + `</div>`;
+    if (done) extra += `<div class="fb ${sh[sel].ok ? 'good' : 'bad'}" role="status" aria-live="polite"><div class="fbt">${sh[sel].ok ? 'Richtig.' : 'Nicht ganz.'}</div><div class="fbb">${c.check.explain}</div></div>`;
+  }
+  const canNext = !c.check || L.sel[L.i] !== undefined;
+  const goals = L.i === 0 && L.st.goals ? `<div class="goals"><div class="tag">Das kannst du danach</div><ul>${L.st.goals.map(g => `<li>${g}</li>`).join('')}</ul></div>` : '';
+  const worked = c.worked ? workedHtml(c.worked, L.wk[L.i] || 0) : '';
+  const lastAct = last ? (L.fromRound ? 'backround' : 'lfinish') : 'lnext';
+  const lastLbl = last ? (L.fromRound ? 'Zurück zur Aufgabe' : 'Lektion abschliessen') : 'Weiter';
+  const dots = L.st.lesson.map((_, i) => `<span class="dot${i <= L.i ? ' on' : ''}"></span>`).join('');
+  return `
+  <main class="wrap round">
+    <div class="rtop">
+      <button class="btn sm" data-act="${L.fromRound ? 'backround' : 'home'}">${L.fromRound ? 'Zurück zur Aufgabe' : 'Zum Lernpfad'}</button>
+      <span class="mono small">Karte ${L.i + 1} von ${n}</span>
+    </div>
+    <div class="dots" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${L.i + 1}" aria-label="Fortschritt in der Lektion">${dots}</div>
+    <section class="card qcard lcard ${L.dir > 0 ? 'fromR' : 'fromL'}" style="${scStyle(L.st.nr)}">
+      <div class="tags"><span class="tag">Lernen \u00B7 Station ${L.st.nr} \u00B7 ${L.st.title}</span></div>
+      <h2 class="lh">${c.h}</h2>
+      ${goals}
+      ${c.body ? `<div class="lbody">${c.body}</div>` : ''}
+      ${worked}
+      ${c.sim ? '<div id="sim" class="simhost"></div>' : ''}
+      ${extra}
+    </section>
+    <div class="navrow">
+      <button class="btn" data-act="lprev" ${L.i === 0 ? 'disabled' : ''}>Zurück</button>
+      <button class="btn btn-primary" data-act="${lastAct}" ${canNext ? '' : 'disabled'}>${lastLbl}</button>
+    </div>
+  </main>`;
+}
+
+function viewLessonDone() {
+  const s = L.st, lv = LEVELS[levelOf(state.xp)];
+  return `
+  <main class="wrap summary">
+    <section class="card">
+      <div class="sumw">${watti(100, 'cheer', 'big')}</div>
+      <div class="tag">Station ${s.nr} \u00B7 ${s.title}</div>
+      <h2 class="sumh">Lektion geschafft.</h2>
+      <p class="lead2">${L.gain ? `<span class="mono b" data-count="${L.gain}" data-prefix="+" data-suffix=" XP">+${L.gain} XP</span> für die Lektion.` : 'Die Punkte für diese Lektion gab es schon beim ersten Mal.'}</p>
+      <p class="small">Jetzt wendest du das Gelernte in einer Runde an.</p>
+      ${newTrophyHtml(L.newTrophies)}
+      ${L.levelUp ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
+    </section>
+    <button class="btn btn-primary block" data-act="start" data-st="${s.id}">Jetzt üben</button>
+    <button class="btn block" data-act="learn" data-st="${s.id}">Lektion nochmals ansehen</button>
+    <button class="btn block" data-act="home">Zum Lernpfad</button>
+  </main>`;
+}
+
+function afterRender() {
+  if (ui.screen === 'home' && checkTrophies().length) save();
+  if (ui.qrTimer) { clearInterval(ui.qrTimer); ui.qrTimer = null; }
+  if (ui.screen === 'qr' && ui.qr && ui.qr.state === 'ok') {
+    const tick = () => {
+      const left = Math.max(0, Math.round((ui.qr.until - Date.now()) / 1000)), el = $id('qrleft');
+      if (el) el.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+      if (left <= 0) { clearInterval(ui.qrTimer); ui.qrTimer = null; const bx = $id('qrbox'); if (bx) bx.innerHTML = '<p class="errtxt">Abgelaufen. Erzeuge einen neuen Code.</p>'; }
+    };
+    tick(); ui.qrTimer = setInterval(tick, 1000);
+  }
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const to = +el.dataset.count, pre = el.dataset.prefix || '', suf = el.dataset.suffix || '';
+    if (ui.anim) countUp(el, to, pre, suf); else el.textContent = pre + to + suf;
+  });
+  if (ui.screen === 'home' && BE.client && state.classCode) loadBoard();
+  if (ui.anim) document.querySelectorAll('[data-w]').forEach(el => nextFrame(() => { el.style.width = el.dataset.w + '%'; }));
+  if (ui.screen === 'lesson') {
+    const c = L.st.lesson[L.i];
+    if (c.sim) { const host = $id('sim'); if (host && SIMS[c.sim]) SIMS[c.sim](host); }
+  }
+  if (ui.screen === 'summary' && ui.anim && R && R.summary) {
+    const s = R.summary;
+    if ((R.mode === 'station' && s.stars === 3) || (R.mode === 'challenge' && s.c === 6) || s.levelUp !== null) confetti(document.querySelector('.summary .card'));
+  }
+}
+
+function render(mode) {
+  const app = $id('app');
+  if (!app) return;
+  const cls = mode === 'keep' ? ' noanim' : mode === 'fb' ? ' fbmode' : ' enter';
+  ui.anim = cls === ' enter';
+  const html = ui.screen === 'home' ? viewHome() : ui.screen === 'round' ? viewRound() : ui.screen === 'summary' ? viewSummary()
+    : ui.screen === 'lesson' ? viewLesson() : ui.screen === 'qr' ? viewQr() : ui.screen === 'trophies' ? viewTrophies() : viewLessonDone();
+  app.innerHTML = `<div class="view${cls}">${html}</div>`;
+  afterRender();
+  if (mode === 'fb') {
+    const el = document.querySelector('[data-act="next"]') || document.querySelector('.fb');
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return;
+  }
+  if (mode !== 'keep') window.scrollTo(0, 0);
+  if (ui.screen === 'round' && mode !== 'keep') {
+    const q = R.queue[R.i];
+    if (q.d.type === 'num' && !q.done) {
+      const el = $id('ans');
+      if (el) setTimeout(() => el.focus(), 30);
+    }
+  }
+}
+
+/* ---------- Eingaben ---------- */
+function onAct(b) {
+  const a = b.dataset.act;
+  if (a === 'start') startRound(b.dataset.st);
+  else if (a === 'review') startRound('review');
+  else if (a === 'learn') startLesson(b.dataset.st);
+  else if (a === 'lnext') lessonGo(1);
+  else if (a === 'lprev') lessonGo(-1);
+  else if (a === 'lopt') { if (L.sel[L.i] === undefined) { L.sel[L.i] = parseInt(b.dataset.i, 10); render('fb'); } }
+  else if (a === 'lfinish') finishLesson();
+  else if (a === 'challenge') startChallenge();
+  else if (a === 'challenge-again') startRound('challenge', b.dataset.code);
+  else if (a === 'rcode') {
+    const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = '6-';
+    for (let i = 0; i < 4; i++) c += ch[Math.floor(Math.random() * ch.length)];
+    ui.chCode = c; ui.chErr = ''; render('keep');
+  }
+  else if (a === 'nick') { state.nick = newNick(); save(); render('keep'); }
+  else if (a === 'copy') {
+    const line = R && R.summary && R.summary.ch ? R.summary.ch.line : '';
+    const say = ok => { const el = $id('copymsg'); if (el) el.textContent = ok ? 'Kopiert.' : 'Markiere den Text und kopiere ihn von Hand.'; };
+    try { navigator.clipboard.writeText(line).then(() => say(true), () => say(false)); } catch (err) { say(false); }
+  }
+  else if (a === 'joinclass') joinClass();
+  else if (a === 'leaveclass') leaveClass().then(() => render('keep'));
+  else if (a === 'refreshboard') { BE.status = ''; if (ui.bt === 'school') loadSchool(true); else if (ui.bt === 'duel') loadClasses(true); else loadBoard(true); }
+  else if (a === 'bt') { ui.bt = b.dataset.t; render('keep'); if (ui.bt === 'school') loadSchool(); else if (ui.bt === 'duel') loadClasses(); }
+  else if (a === 'duelgo') { const el = $id('duelcodes'); ui.duelInput = el ? el.value : ''; BE.classes = null; render('keep'); loadClasses(true); }
+  else if (a === 'poke') {
+    const bub = $id('bubble');
+    if (bub) { bub.textContent = WATTI_TIPS[tipI++ % WATTI_TIPS.length]; bub.classList.remove('show'); void bub.offsetWidth; bub.classList.add('show'); }
+    const wt = document.querySelector('.hero .watti');
+    if (wt) { wt.classList.remove('hop'); void wt.offsetWidth; wt.classList.add('hop'); }
+  }
+  else if (a === 'introdone') { state.introDone = true; save(); render('keep'); }
+  else if (a === 'wstep') {
+    const ol = document.querySelector('.wsteps'), hid = ol && ol.querySelector('li.hid');
+    if (hid) { hid.classList.remove('hid'); L.wk[L.i] = (L.wk[L.i] || 0) + 1; if (hid.scrollIntoView) hid.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    if (ol && !ol.querySelector('li.hid')) { b.disabled = true; b.textContent = 'Das war es'; }
+  }
+  else if (a === 'explain') openExplain();
+  else if (a === 'backround') { ui.screen = 'round'; render('keep'); window.scrollTo(0, 0); }
+  else if (a === 'showqr') showQr();
+  else if (a === 'opt') answerMC(parseInt(b.dataset.i, 10));
+  else if (a === 'check') checkNum();
+  else if (a === 'next') nextQ();
+  else if (a === 'home') { ui.screen = 'home'; ui.formulas = false; render(); }
+  else if (a === 'trophies') { checkTrophies(); TROPHIES.forEach(t => { if (state.trophies[t.id]) state.trophySeen[t.id] = true; }); save(); ui.screen = 'trophies'; render(); }
+  else if (a === 'quit') { ui.screen = 'home'; ui.formulas = false; R = null; render(); }
+  else if (a === 'formulas') {
+    if (R && ui.screen === 'round') { const el = $id('ans'); if (el) R.queue[R.i].input = el.value; }
+    ui.formulas = !ui.formulas; render('keep');
+  }
+  else if (a === 'reset') {
+    if (ui.confirmReset) { leaveClass(true); state = defaults(); state.nick = newNick(); save(); ui.confirmReset = false; }
+    else ui.confirmReset = true;
+    render('keep');
+  }
+}
+// Tippen zuverlässig machen: Touch-Geräte lösen manchmal keinen Klick aus (iPhone-Safari)
+let touchPos = null, lastTouchAct = 0;
+document.addEventListener('touchstart', e => { const t = e.touches && e.touches[0]; touchPos = t ? { x: t.clientX, y: t.clientY } : null; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const t = e.changedTouches && e.changedTouches[0];
+  if (!touchPos || !t) return;
+  const moved = Math.abs(t.clientX - touchPos.x) + Math.abs(t.clientY - touchPos.y); touchPos = null;
+  if (moved > 10) return;                                   // Wischen zum Scrollen zählt nicht als Tippen
+  const b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+  if (!b || b.disabled) return;
+  e.preventDefault(); lastTouchAct = Date.now(); onAct(b);
+}, { passive: false });
+document.addEventListener('click', e => {
+  if (Date.now() - lastTouchAct < 700) return;             // schon über Touch behandelt
+  const b = e.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  onAct(b);
+});
+document.addEventListener('input', e => {
+  if (!e.target) return;
+  if (e.target.id === 'chcode') ui.chCode = e.target.value;
+  else if (e.target.id === 'realname') { state.realName = e.target.value.slice(0, 30); save(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target) return;
+  if (e.target.id === 'ans') { e.preventDefault(); checkNum(); }
+  else if (e.target.id === 'chcode') { e.preventDefault(); startChallenge(); }
+  else if (e.target.id === 'clscode') { e.preventDefault(); joinClass(); }
+});
+
+
+if (typeof globalThis !== 'undefined') globalThis.__lernapp = { STATIONS, fmt, parseNum, buildChallenge, normCode, SIMS, getR: () => R, getState: () => state };
+beInit();
+render();
+// Sprung aus der Startseite: lernapp.html öffnet mit #learn-<Station> direkt die Lektion
+(function () {
+  const m = typeof location !== 'undefined' ? /^#learn-([a-z0-9]+)$/.exec(String(location.hash || '')) : null;
+  if (m && STATIONS.some(s => s.id === m[1])) startLesson(m[1]);
+})();
+})();
+
+
+</script>
+</body>
+</html>

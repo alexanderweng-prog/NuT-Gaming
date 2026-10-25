@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Lern-App Natur und Technik</title>
+<style>
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('fonts/nunito.woff2') format('woff2'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'JetBrains Mono'; src: url('fonts/jetbrains-mono.woff2') format('woff2'); font-weight: 100 800; font-display: swap; }
+/* Farbschema "Energie": kräftig, jugendlich, mit gutem Kontrast */
+:root {
+  --font-display: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'Nunito', 'Segoe UI', system-ui, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-md: 1.125rem;
+  --text-lg: 1.375rem; --text-xl: 1.75rem; --text-2xl: 2.25rem; --text-3xl: 3rem;
+  --tracking-wider: 0.12em;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+  --radius-sm: 8px; --radius-md: 16px; --radius-lg: 22px;
+
+  --pop-yellow: #fed835;
+  --pop-pink:   #fb55b1;
+  --pop-cyan:   #36dcec;
+  --pop-green:  #49de78;
+  --ink: #161332;
+  --st-1: #fc65b6;
+  --st-2: #ff8f31;
+  --st-3: #edd643;
+  --st-4: #4cd676;
+  --st-5: #43cae7;
+  --st-6: #ae8bff;
+
+  --bg: #f3f4ff;
+  --surface: #fdfdff;
+  --subtle: #e6e7ff;
+  --text: #181535;
+  --muted: #4a486d;
+  --line: #1f174a;
+  --line-soft: #babadd;
+  --primary: #6442e4;
+  --on-primary: #fbfbff;
+  --accent-text: #502cbe;
+  --accent-bg: #e3e4ff;
+  --good: #005928;   --good-bg: #c1f7d2;
+  --bad:  #a90017;    --bad-bg:  #ffdfda;
+  --warn: #784000;    --warn-bg: #ffeea0;
+  --header-bg: #2f127b;
+  --header-text: #fbfbff;
+  --header-muted: #ccccf8;
+  --header-line: #6358ba;
+  --bar-track: #d4d4f5;
+  --bar-fill: #745af4;
+  --xp: var(--pop-yellow);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #120e2d; --surface: #1f1a43; --subtle: #181439;
+    --text: #f4f4fd; --muted: #c0c0e4; --line: #9d99ed; --line-soft: #3e3a70;
+    --primary: #a89fff; --on-primary: #141030;
+    --accent-text: #c9c6ff; --accent-bg: #2d2560;
+    --good: #5eee9c; --good-bg: #00361a;
+    --bad: #ffa59c;   --bad-bg: #4f1a18;
+    --warn: #f6da6f;  --warn-bg: #3e2e00;
+    --header-bg: #0a0427;
+    --bar-track: #373267; --bar-fill: #aea5ff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #120e2d; --surface: #1f1a43; --subtle: #181439;
+  --text: #f4f4fd; --muted: #c0c0e4; --line: #9d99ed; --line-soft: #3e3a70;
+  --primary: #a89fff; --on-primary: #141030;
+  --accent-text: #c9c6ff; --accent-bg: #2d2560;
+  --good: #5eee9c; --good-bg: #00361a;
+  --bad: #ffa59c;   --bad-bg: #4f1a18;
+  --warn: #f6da6f;  --warn-bg: #3e2e00;
+  --header-bg: #0a0427;
+  --bar-track: #373267; --bar-fill: #aea5ff;
+}
+
+/* Basis */
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.45; min-height: 100vh; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--header-bg); }
+h1, h2, h3, p { margin: 0; }
+.mono { font-family: var(--font-mono); }
+.b { font-weight: 700; }
+.small { font-size: var(--text-sm); color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 720px; margin: 0 auto; padding: var(--space-5) var(--space-4) var(--space-7); }
+.tag { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--accent-text); }
+.tag.inv { color: var(--header-muted); }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* Kopfbereich */
+.top { background: var(--header-bg); color: var(--header-text); padding: var(--space-4) var(--space-4) var(--space-5); border-bottom: 2px solid var(--line); }
+.top > * { max-width: 688px; margin-left: auto; margin-right: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+.logochip { background: #fff; border-radius: var(--radius-md); padding: 6px 10px; display: flex; }
+.logochip img { height: 30px; width: auto; display: block; }
+.top h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); line-height: 1.05; letter-spacing: -0.01em; }
+.lead { color: var(--header-muted); font-size: var(--text-md); margin-top: var(--space-2); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-5); }
+.stat { border: 2px solid var(--header-line); border-radius: var(--radius-md); padding: var(--space-3); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .k { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--header-muted); }
+.stat .v { font-weight: 700; font-size: var(--text-md); line-height: 1.15; overflow-wrap: anywhere; }
+.stat .s { font-size: var(--text-xs); color: var(--header-muted); }
+.xpbar { height: 12px; border-radius: 6px; background: var(--header-line); margin-top: var(--space-4); overflow: hidden; }
+.xpbar > div { height: 100%; background: #73ce95; border-radius: 6px; transition: width .3s ease; }
+.xpbar.light { background: var(--bar-track); margin: var(--space-3) 0 var(--space-4); }
+.xpbar.light > div { background: var(--bar-fill); }
+
+/* Lernpfad */
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-4) 0 var(--space-3); }
+.row h2, .sumh { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); line-height: 1.15; }
+.streaknote { margin-top: var(--space-1); }
+.path { display: flex; flex-direction: column; gap: var(--space-3); }
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); }
+.st { display: grid; grid-template-columns: 44px 1fr; grid-template-areas: "num body" "act act"; gap: var(--space-3) var(--space-3); align-items: start; }
+.st .num { grid-area: num; width: 44px; height: 44px; border-radius: 50%; background: var(--text); color: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-lg); }
+.st .stbody { grid-area: body; min-width: 0; }
+.st > .btn, .st > .lock { grid-area: act; }
+.st h3, .review h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; }
+.sub { font-size: var(--text-sm); color: var(--accent-text); margin-top: 2px; font-weight: 500; }
+.mast { display: flex; gap: 4px; margin-top: var(--space-3); }
+.seg { height: 8px; flex: 1; border-radius: 3px; background: var(--bar-track); }
+.seg.on { background: var(--bar-fill); }
+.starsrow { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+.stars { font-size: var(--text-lg); letter-spacing: 3px; color: var(--accent-text); }
+.st.locked { border-style: dashed; border-color: var(--line-soft); background: var(--subtle); }
+.st.locked .num { background: var(--line-soft); color: var(--muted); }
+.st.locked h3 { color: var(--muted); }
+.lock { text-align: center; padding: var(--space-2); font-weight: 600; }
+.review { display: grid; gap: var(--space-3); background: var(--accent-bg); }
+.review p { margin-top: var(--space-1); color: var(--text); }
+.foot { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 2px solid var(--line); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+
+/* Buttons */
+.btn { appearance: none; min-height: 52px; padding: 0 var(--space-5); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: 700 var(--text-md)/1.1 var(--font-body); cursor: pointer; }
+@media (hover: hover) { .btn:hover { background: var(--subtle); } }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+@media (hover: hover) { .btn-primary:hover { background: var(--primary); filter: brightness(1.08); } }
+.btn.sm { min-height: 40px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+.btn.block { display: block; width: 100%; margin-top: var(--space-3); }
+.st > .btn { width: 100%; }
+.review > .btn { width: 100%; }
+
+/* Runde */
+.round { padding-top: var(--space-4); }
+.rtop { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.qcard { padding: var(--space-5) var(--space-4); }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+.badge { font-size: var(--text-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); outline: 1px solid var(--warn); }
+.q { font-family: var(--font-body); font-weight: 700; font-size: var(--text-lg); line-height: 1.3; margin-bottom: var(--space-5); }
+.opts { display: flex; flex-direction: column; gap: var(--space-3); }
+.opt { appearance: none; display: flex; align-items: flex-start; gap: var(--space-3); text-align: left; width: 100%; min-height: 56px; padding: var(--space-3) var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: 500 var(--text-md)/1.35 var(--font-body); cursor: pointer; }
+@media (hover: hover) { .opt:hover:not(:disabled) { background: var(--subtle); } }
+.opt .ltr { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); }
+.opt:disabled { cursor: default; color: var(--text); opacity: .75; }
+.opt.good { opacity: 1; background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.opt.good .ltr { background: var(--good); color: var(--good-bg); border-color: var(--good); }
+.opt.bad { opacity: 1; background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.opt.bad .ltr { background: var(--bad); color: var(--bad-bg); border-color: var(--bad); }
+.ansrow { display: flex; align-items: stretch; gap: var(--space-3); margin-bottom: var(--space-2); }
+.numin { flex: 1; min-width: 0; min-height: 60px; padding: 0 var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font-size: var(--text-xl); font-weight: 700; }
+.numin:disabled { opacity: .7; }
+.unitl { display: flex; align-items: center; min-width: 3.2em; font-size: var(--text-lg); font-weight: 700; color: var(--accent-text); }
+.fb { margin-top: var(--space-4); border: 2px solid; border-radius: var(--radius-md); padding: var(--space-4); }
+.fb .fbt { font-weight: 700; font-size: var(--text-md); margin-bottom: var(--space-1); }
+.fb .fbb { font-size: var(--text-base); line-height: 1.5; }
+.fb.good { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.fb.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.fb.warn { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.fb .fbb { color: var(--text); }
+.fb .fbt { color: inherit; }
+
+/* Formelkarte */
+.formulas { margin-bottom: var(--space-4); background: var(--subtle); }
+.formulas table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); }
+.formulas th, .formulas td { text-align: left; vertical-align: top; padding: var(--space-2) 0; border-top: 1px solid var(--line-soft); font-size: var(--text-sm); }
+.formulas th { font-weight: 600; width: 38%; padding-right: var(--space-3); color: var(--muted); }
+.formulas td .b { font-size: var(--text-base); }
+.formulas td .m { color: var(--muted); font-size: var(--text-sm); }
+
+/* Ergebnis */
+.summary .sumh { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-2xl); }
+.bigstars { font-size: var(--text-3xl); letter-spacing: 6px; color: var(--accent-text); line-height: 1; margin-bottom: var(--space-3); }
+.lead2 { font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.gain { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-2); }
+.gain .b { font-size: var(--text-xl); color: var(--accent-text); }
+.summary .fb { margin-top: var(--space-4); }
+.miss { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 2px solid var(--line); }
+.miss ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); }
+.miss li { margin: 2px 0; }
+
+@media (min-width: 560px) {
+  .st { grid-template-columns: 44px 1fr auto; grid-template-areas: "num body act"; align-items: center; }
+  .st > .btn, .st > .lock { width: auto; min-width: 130px; }
+  .review { grid-template-columns: 1fr auto; align-items: center; }
+  .review > .btn { width: auto; min-width: 150px; }
+  .top h1 { font-size: 3.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { .xpbar > div { transition: none; } .btn:active { transform: none; } }
+
+/* ===== Erweiterung: Lernteil, Simulationen, Challenge, Animationen ===== */
+.btn:disabled { opacity: .4; cursor: default; }
+.xpbar > div { transition: width .9s cubic-bezier(.3,.8,.3,1); }
+.xpbar.light > div { transition: width .35s ease; }
+.acts { grid-area: act; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.acts .btn { width: 100%; padding: 0 var(--space-3); }
+
+/* Lektion */
+.lh { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); line-height: 1.2; margin-bottom: var(--space-3); }
+.lbody p, .lbody ul { margin: 0 0 12px; }
+.lbody ul { padding-left: 22px; }
+.lbody li { margin: 4px 0; }
+.lcard h3.q { margin-top: 20px; }
+.dots { display: flex; gap: 6px; margin: 12px 0; }
+.dot { flex: 1; height: 8px; border-radius: 4px; background: var(--bar-track); transition: background .3s; }
+.dot.on { background: var(--bar-fill); }
+.navrow { display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-3); margin-top: var(--space-4); }
+.simhost { margin-top: var(--space-2); }
+.merk { display: flex; gap: var(--space-3); align-items: flex-start; border: 2px solid var(--primary); background: var(--accent-bg); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0; color: var(--text); }
+.mk { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); }
+.merk.warn { border-color: var(--warn); background: var(--warn-bg); }
+.merk.warn .mk { background: var(--warn); color: var(--warn-bg); }
+.tri { width: 190px; margin: 12px auto; text-align: center; font-size: var(--text-xl); font-weight: 700; }
+.tri-top { border: 2px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; padding: 8px; background: var(--accent-bg); }
+.tri-row { display: grid; grid-template-columns: 1fr 1fr; }
+.tri-row > div { border: 2px solid var(--line); padding: 8px; }
+.tri-row > div:first-child { border-radius: 0 0 0 8px; border-right-width: 1px; }
+.tri-row > div:last-child { border-radius: 0 0 8px 0; border-left-width: 1px; }
+.plate { border: 3px double var(--line); border-radius: 6px; padding: 12px; text-align: center; margin: 8px 0 16px; background: var(--subtle); line-height: 1.8; }
+
+/* Simulationen */
+.sim { border: 2px solid var(--line-soft); border-radius: var(--radius-md); padding: var(--space-3); background: var(--subtle); }
+.sl { display: block; margin-top: var(--space-3); }
+.sll { display: block; font-weight: 600; font-size: var(--text-sm); margin-bottom: 2px; }
+input[type=range] { width: 100%; height: 36px; margin: 0; accent-color: var(--primary); }
+.readout { font-size: var(--text-sm); line-height: 1.7; background: var(--surface); border: 2px solid var(--line-soft); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-3); }
+.readout.mono, p.readout.mono { font-family: var(--font-mono); }
+.hubvis { display: flex; gap: var(--space-4); align-items: flex-end; }
+.hubvis .readout { flex: 1; margin-top: 0; min-width: 0; }
+.rail { position: relative; width: 110px; height: 190px; flex: none; border-left: 3px solid var(--line); border-bottom: 3px solid var(--line); }
+.rl { position: absolute; left: 8px; font-size: var(--text-xs); color: var(--muted); }
+.rl.top { top: 0; } .rl.bot { bottom: 0; }
+.wtbox { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 0; height: 34px; border-radius: 6px; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: transform .7s cubic-bezier(.3,.8,.3,1), width .3s; }
+.seg3 { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.seg3 .btn.on, .chips .btn.on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.brow { display: grid; grid-template-columns: 4.5rem 1fr 4.8rem; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
+.bname { font-size: var(--text-sm); font-weight: 600; }
+.btrack { display: block; height: 16px; background: var(--bar-track); border-radius: 8px; overflow: hidden; }
+.bfill { display: block; height: 100%; background: var(--bar-fill); border-radius: 8px; transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.bval { font-size: var(--text-xs); text-align: right; }
+.lanes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.lane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.trk { position: relative; height: 150px; border: 2px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.trk i { display: block; position: absolute; left: 0; right: 0; height: 2px; background: var(--line-soft); }
+.trk i:nth-child(1) { bottom: 28px; } .trk i:nth-child(2) { bottom: 56px; } .trk i:nth-child(3) { bottom: 84px; } .trk i:nth-child(4) { bottom: 112px; } .trk i:nth-child(5) { bottom: 140px; }
+.run { position: absolute; left: 50%; bottom: 4px; width: 22px; height: 22px; margin-left: -11px; border-radius: 6px; background: var(--primary); }
+.lname { font-weight: 700; }
+.lpl { min-height: 2.7em; }
+.srow { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n v" "t t"; gap: 6px var(--space-2); align-items: center; width: 100%; padding: 10px 12px; margin: 6px 0; border: 2px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.srow .bname { grid-area: n; } .srow .bval { grid-area: v; } .srow .btrack { grid-area: t; }
+.srow.on { border-color: var(--line); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+.trio > div { background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-md); padding: 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trio .k { font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--muted); }
+.trio b { font-size: var(--text-md); overflow-wrap: anywhere; }
+.puivis { display: flex; gap: var(--space-4); align-items: flex-end; }
+.areabox { position: relative; width: 170px; height: 170px; flex: none; border-left: 3px solid var(--line); border-bottom: 3px solid var(--line); }
+.area { position: absolute; left: 0; bottom: 0; width: 0; height: 0; background: var(--accent-bg); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--accent-text); font-weight: 700; transition: width .4s ease, height .4s ease; overflow: hidden; }
+.lampwrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lamp { width: 64px; height: 64px; border-radius: 50%; background: #ffdc4c; border: 3px solid var(--line); transition: opacity .4s; }
+.meterbox { display: flex; align-items: baseline; gap: var(--space-2); background: var(--header-bg); color: var(--header-text); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); }
+.mdisp { font-size: var(--text-2xl); font-weight: 700; letter-spacing: .04em; }
+.mu { color: var(--header-muted); }
+.mcost { margin: var(--space-2) 0 0; }
+.verdict { font-weight: 700; margin-top: 10px; padding: 10px 12px; border: 2px solid var(--line); border-radius: var(--radius-md); background: var(--accent-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.stack { display: flex; height: 40px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid var(--line); background: var(--surface); }
+.sn { background: var(--bar-fill); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sw { background: var(--line-soft); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.stlab { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); margin: var(--space-2) 0; }
+
+/* Challenge */
+.chal { background: var(--subtle); }
+.chal h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; margin: 4px 0 6px; }
+.chrow { margin-top: var(--space-3); }
+.chrow .numin { font-size: var(--text-lg); min-height: 52px; text-transform: uppercase; }
+.errtxt { color: var(--bad); font-weight: 600; font-size: var(--text-sm); margin-top: 4px; }
+.chlist { margin: var(--space-3) 0 0; padding-left: 20px; font-size: var(--text-sm); }
+.nickrow { margin-top: var(--space-3); display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.resline { border: 2px dashed var(--line); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-3) 0 var(--space-2); font-size: var(--text-sm); overflow-wrap: anywhere; user-select: all; }
+
+/* Animationen */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes slideR { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes slideL { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { opacity: 0; transform: scale(.94); } 60% { transform: scale(1.02); } 100% { opacity: 1; transform: none; } }
+@keyframes shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(1.025); } 100% { transform: scale(1); } }
+@keyframes starin { 0% { opacity: 0; transform: scale(.2) rotate(-40deg); } 70% { transform: scale(1.25) rotate(8deg); } 100% { opacity: 1; transform: none; } }
+@keyframes fly { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
+.view.enter { animation: rise .35s both; }
+.view.enter .path > * { animation: rise .45s both; animation-delay: calc(var(--i, 0) * 70ms); }
+.lcard.fromR { animation: slideR .35s both; }
+.lcard.fromL { animation: slideL .35s both; }
+.fb { animation: pop .3s both; }
+.opt.bad { animation: shake .45s; }
+.opt.good { animation: pulse .5s; }
+.numin.err { border-color: var(--bad); animation: shake .45s; }
+.bigstars span { display: inline-block; color: var(--line-soft); animation: starin .5s var(--d, 0ms) both; }
+.bigstars span.on { color: var(--accent-text); }
+.summary .card { position: relative; overflow: hidden; }
+.confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti span { position: absolute; left: 50%; top: 30%; width: 9px; height: 14px; border-radius: 2px; animation: fly 1.3s ease-out both; }
+.view.noanim *, .view.noanim { animation: none !important; }
+@media (min-width: 560px) {
+  .acts { grid-template-columns: auto auto; }
+  .acts .btn { min-width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Klassenwertung */
+.clsc { background: var(--subtle); }
+.clsc h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.2; margin: 4px 0 8px; }
+.clsc p { margin-top: 6px; }
+.board { list-style: none; margin: var(--space-2) 0; padding: 0; }
+.board li { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: var(--space-2); align-items: center; padding: 10px 12px; border: 2px solid var(--line-soft); border-radius: var(--radius-md); margin: 6px 0; background: var(--surface); font-size: var(--text-base); }
+.board li.me { border-color: var(--line); background: var(--accent-bg); font-weight: 700; }
+.board li.gap { display: block; text-align: center; border: none; background: none; padding: 0; color: var(--muted); }
+.board .rk { font-weight: 700; color: var(--accent-text); }
+.board .nm { min-width: 0; overflow-wrap: anywhere; }
+.goal { margin-top: var(--space-3); }
+.btnrow { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.chboard { margin-top: var(--space-4); padding-top: var(--space-3); border-top: 2px solid var(--line); }
+
+/* ===================== Jugendlicher Look ===================== */
+body { font-weight: 500; }
+h1, h2, h3, .top h1, .row h2, .sumh, .lh, .st h3, .review h3, .clsc h3, .chal h3 { font-family: var(--font-display); letter-spacing: 0; }
+.q { font-family: var(--font-body); font-weight: 800; }
+.xpbar { height: 16px; border-radius: 8px; }
+.top .xpbar { border: 3px solid var(--header-line); background: #150a3c; }
+.xpbar > div, .top .xpbar > div { background: var(--xp); }
+.xpbar.light { height: 14px; border: 3px solid var(--line); background: var(--bar-track); }
+.xpbar.light > div { background: var(--sc, var(--bar-fill)); }
+.xpbar > div { position: relative; overflow: hidden; border-radius: 6px; }
+.xpbar > div::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); transform: translateX(-100%); animation: shine 2.4s ease-in-out infinite; }
+@keyframes shine { to { transform: translateX(100%); } }
+
+/* Karten und Knöpfe im Sticker-Stil */
+.card { border-width: 3px; border-radius: var(--radius-md); box-shadow: 0 5px 0 var(--line); }
+.btn { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--line); font-weight: 800; transition: transform .08s ease, box-shadow .08s ease, filter .15s; }
+@media (hover: hover) { .btn:hover { filter: brightness(1.06); } }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+.btn.sm { box-shadow: 0 3px 0 var(--line); }
+.btn:disabled { box-shadow: none; transform: none; }
+.btn-primary { border-color: var(--line); }
+.btn.nudge { animation: nudge 1.7s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { box-shadow: 0 4px 0 var(--line), 0 0 0 0 var(--pop-yellow); } 50% { box-shadow: 0 4px 0 var(--line), 0 0 0 9px rgba(254,216,53,0); } }
+.seg3 .btn.on, .chips .btn.on { border-color: var(--line); }
+.tag { color: var(--accent-text); }
+.tag.inv { color: var(--header-muted); }
+
+/* Kopfbereich */
+.top { position: relative; overflow: hidden; border-bottom: 4px solid var(--line);
+  background: radial-gradient(circle at 88% 18%, rgba(165,0,145,.55), transparent 42%), radial-gradient(circle at 6% 92%, rgba(0,131,199,.5), transparent 46%), var(--header-bg); }
+.top > * { position: relative; z-index: 1; }
+.top > .spark { position: absolute; z-index: 0; max-width: none; margin: 0; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%; background: var(--c); opacity: .55; animation: drift var(--t) ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(22px, -26px) scale(1.35); } }
+.hero { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.herotxt { min-width: 0; }
+.top h1 { font-weight: 700; font-size: 3.2rem; line-height: 1; text-shadow: 0 3px 0 #150640; }
+.stat { border: 3px solid var(--header-line); border-radius: 14px; background: rgba(255,255,255,.08); }
+.stat:nth-child(2) .v { color: var(--pop-yellow); }
+.stat .v { font-family: var(--font-display); font-weight: 600; }
+.stat .v.mono { font-family: var(--font-mono); font-weight: 700; }
+.logochip { border: 3px solid var(--line); box-shadow: 0 3px 0 var(--line); }
+.bubble { display: none; margin-top: var(--space-2); background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); border-radius: 14px; padding: 8px 12px; font-weight: 800; font-size: var(--text-sm); }
+.bubble.show { display: inline-block; animation: pop .35s both; }
+.wbtn { appearance: none; background: none; border: 0; padding: 4px; cursor: pointer; flex: none; }
+
+/* Stationen */
+.st .num { width: 50px; height: 50px; border-radius: 14px; background: var(--sc); color: var(--ink); border: 3px solid var(--line); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); box-shadow: 0 3px 0 var(--line); }
+.st { grid-template-columns: 50px 1fr; }
+.seg { height: 10px; border-radius: 5px; }
+.seg.on { background: var(--sc, var(--bar-fill)); }
+.sub { color: var(--accent-text); font-weight: 700; }
+.stars { font-size: var(--text-xl); color: var(--pop-yellow); -webkit-text-stroke: 1.5px var(--line); letter-spacing: 2px; }
+.st.locked { box-shadow: none; }
+.st.locked .num { background: var(--line-soft); box-shadow: none; }
+.review { background: var(--accent-bg); }
+.intro { background: var(--pop-yellow); color: var(--ink); margin-bottom: var(--space-4); }
+.intro .tag { color: var(--ink); }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin: var(--space-3) 0; }
+.step3 { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; background: var(--surface); color: var(--text); border: 3px solid var(--line); border-radius: 14px; padding: 10px 6px; }
+.step3 b { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; }
+.step3 span { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); }
+.step3 small { font-size: var(--text-xs); color: var(--muted); line-height: 1.25; }
+.intro .btn { color: var(--text); }
+
+/* Aufgaben und Lektionen */
+.qcard { border-top: 12px solid var(--sc, var(--primary)); }
+.round .qcard { margin-top: 38px; }
+.opt { border-width: 3px; border-radius: 14px; box-shadow: 0 4px 0 var(--line-soft); transition: transform .1s, box-shadow .1s, background .15s; }
+@media (hover: hover) { .opt:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 var(--line-soft); } }
+.opt .ltr { background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); }
+.opt.good, .opt.bad { box-shadow: 0 4px 0 currentColor; }
+.opt.good .ltr { background: var(--good); color: var(--good-bg); }
+.opt.bad .ltr { background: var(--bad); color: var(--bad-bg); }
+.numin { border-width: 3px; border-radius: 14px; }
+.fb { border-width: 3px; border-radius: 14px; position: relative; }
+.fbx { margin-top: var(--space-3); }
+.dot { height: 10px; border-radius: 5px; }
+.dot.on { background: var(--sc, var(--bar-fill)); }
+.merk { border-width: 3px; border-radius: 14px; }
+.mk { background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); }
+.merk.warn .mk { background: var(--pop-pink); color: var(--ink); }
+.goals { background: var(--accent-bg); border: 3px solid var(--line); border-radius: 14px; padding: var(--space-3); margin-bottom: var(--space-3); }
+.goals ul { margin: var(--space-1) 0 0; padding-left: 20px; }
+.worked { border: 3px solid var(--line); border-radius: 14px; background: var(--subtle); padding: var(--space-3); margin: var(--space-3) 0; }
+.wgiven { font-weight: 800; margin-bottom: var(--space-2); }
+.wsteps { list-style: none; margin: 0 0 var(--space-3); padding: 0; counter-reset: w; }
+.wsteps li { counter-increment: w; display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 2px dashed var(--line-soft); max-height: 240px; overflow: hidden; transition: opacity .45s ease, max-height .55s ease, transform .45s ease, padding .45s ease; }
+.wsteps li::before { content: counter(w); width: 30px; height: 30px; border-radius: 50%; background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.wsteps li.hid { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; transform: translateY(12px); border-color: transparent; }
+.wt { font-weight: 800; }
+.wm { font-size: var(--text-sm); margin-top: 2px; overflow-wrap: anywhere; }
+.bfill, .sn { background: var(--sc, var(--bar-fill)); }
+.run, .wt2 { background: var(--sc, var(--primary)); }
+.wt { color: inherit; }
+.sim .wtbox, .rail .wtbox { background: var(--sc, var(--primary)); color: var(--ink); border: 3px solid var(--line); }
+.sim { border-width: 3px; border-radius: 14px; }
+.readout { border-width: 3px; }
+.xppop { position: absolute; right: 14px; top: -18px; background: var(--pop-yellow); color: var(--ink); border: 3px solid var(--line); border-radius: 999px; padding: 2px 12px; font-family: var(--font-display); font-weight: 700; animation: xpfloat 1.3s ease-out both; }
+@keyframes xpfloat { 0% { opacity: 0; transform: translateY(18px) scale(.5); } 30% { opacity: 1; transform: translateY(-8px) scale(1.15); } 100% { opacity: 1; transform: translateY(-4px) scale(1); } }
+.bigstars span.on { color: var(--pop-yellow); -webkit-text-stroke: 2px var(--line); }
+.bigstars span { -webkit-text-stroke: 2px var(--line-soft); }
+.sumw { position: absolute; right: 12px; top: 8px; }
+.summary .card { padding-right: 96px; }
+.board li.me { background: var(--pop-yellow); color: var(--ink); }
+.board li.me .rk { color: var(--ink); }
+.view.enter .qcard { animation: bounceIn .55s both; }
+.view.enter .opts .opt { animation: rise .4s both; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+@keyframes bounceIn { 0% { opacity: 0; transform: translateY(26px) scale(.96); } 60% { opacity: 1; transform: translateY(-5px) scale(1.01); } 100% { opacity: 1; transform: none; } }
+
+/* Maskottchen Watti: eine kleine Batterie, die sich mit deinen Punkten füllt */
+.watti { --w: 64px; position: relative; width: var(--w); display: flex; flex-direction: column; align-items: center; transform-origin: 50% 100%; animation: idle 3.4s ease-in-out infinite; }
+.watti.big { --w: 78px; }
+.watti.mini { --w: 46px; position: absolute; right: 16px; top: calc(var(--w) * -1.42); }
+.watti .cap { width: calc(var(--w) * .34); height: calc(var(--w) * .11); background: var(--line); border-radius: 4px 4px 0 0; }
+.watti .body { position: relative; width: var(--w); height: calc(var(--w) * 1.3); border: 3px solid var(--line); border-radius: calc(var(--w) * .26); background: #f3f4ff; overflow: hidden; box-shadow: 0 4px 0 var(--line); }
+.watti .fill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--lvl); background: var(--pop-yellow); transition: height 1s cubic-bezier(.3, .8, .3, 1); }
+.watti .fill::before { content: ""; position: absolute; left: 0; right: 0; top: -3px; height: 3px; background: rgba(31,23,74,.35); }
+.watti .face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--w) * .1); }
+.watti .eyes { display: flex; gap: calc(var(--w) * .2); }
+.watti .eye { display: block; width: calc(var(--w) * .13); height: calc(var(--w) * .19); background: var(--ink); border-radius: 50%; animation: blink 4.6s infinite; }
+.watti .mouth { display: block; width: calc(var(--w) * .3); height: calc(var(--w) * .14); border: 3px solid var(--ink); border-top: none; border-radius: 0 0 calc(var(--w) * .3) calc(var(--w) * .3); }
+.watti[data-mood="cheer"] .mouth { height: calc(var(--w) * .2); background: var(--ink); }
+.watti[data-mood="sad"] .mouth { border: 3px solid var(--ink); border-bottom: none; border-radius: calc(var(--w) * .3) calc(var(--w) * .3) 0 0; margin-top: calc(var(--w) * .06); }
+.watti[data-mood="think"] .mouth { border: 0; border-bottom: 3px solid var(--ink); border-radius: 0; width: calc(var(--w) * .2); height: 0; }
+.watti[data-mood="cheer"] { animation: hop .65s ease-out 2; }
+.watti[data-mood="sad"] { animation: wobble .7s ease-in-out; }
+.watti.hop { animation: hop .65s ease-out; }
+@keyframes idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes hop { 0% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-24px) scale(.94, 1.1); } 62% { transform: translateY(0) scale(1.1, .9); } 100% { transform: none; } }
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+@media (max-width: 380px) { .top h1 { font-size: 2.6rem; } .watti.big { --w: 64px; } }
+
+/* QR-Lernstand und Prüf-App */
+.txtin { font-family: var(--font-body); font-weight: 700; font-size: var(--text-md); text-transform: none; }
+.qrbox { background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 10px; margin: var(--space-3) auto; max-width: 340px; }
+.qrbox svg { display: block; width: 100%; height: auto; }
+.qrscreen .card { padding-right: var(--space-4); }
+.countdown { text-align: center; font-weight: 800; margin: var(--space-2) 0 var(--space-3); }
+.qrc { background: var(--subtle); }
+.qrc h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); margin: 4px 0 6px; }
+.tpage .card { margin-bottom: var(--space-4); }
+.thead { margin-bottom: var(--space-4); }
+.thead h1 { font-family: var(--font-display); font-size: var(--text-2xl); margin: 4px 0 6px; }
+.tpage h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); margin: 4px 0 8px; }
+.cam { width: 100%; max-height: 340px; border: 3px solid var(--line); border-radius: 14px; background: #000; object-fit: cover; margin-bottom: var(--space-3); }
+.det { margin-top: var(--space-3); }
+.det summary { cursor: pointer; font-weight: 800; padding: 6px 0; }
+.manual { width: 100%; border: 3px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); padding: 10px; font-size: var(--text-sm); }
+.rhead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.rbadge { font-weight: 800; padding: 4px 14px; border: 3px solid var(--line); border-radius: 999px; background: var(--subtle); }
+.rbadge.good { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+.rbadge.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.rbadge.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.flags { margin: var(--space-3) 0 0; padding-left: 20px; }
+.flags li { margin: 4px 0; font-weight: 700; }
+.tbl { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.tbl th, .tbl td { text-align: left; padding: 8px 6px; border-top: 2px solid var(--line-soft); vertical-align: top; }
+.tbl thead th { border-top: none; font-size: var(--text-xs); letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--muted); }
+.rtbl th { width: 42%; color: var(--muted); font-weight: 700; }
+.tscroll { overflow-x: auto; }
+.tg { color: var(--good); font-weight: 800; } .tw { color: var(--warn); font-weight: 800; }
+#resultcard.flash { animation: pop .4s both; }
+
+/* Motor-Simulationen */
+@keyframes spin { to { transform: rotate(360deg); } }
+.chk { display: flex; align-items: center; gap: 8px; margin-top: var(--space-3); font-weight: 800; }
+.chk input { width: 22px; height: 22px; accent-color: var(--primary); }
+.magvis { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: var(--space-3); }
+.nail { position: relative; width: 210px; height: 50px; }
+.core { position: absolute; left: 6px; right: 6px; top: 15px; height: 20px; border-radius: 10px; background: var(--muted); border: 3px solid var(--line); transition: opacity .3s; }
+.coil { position: absolute; left: 34px; right: 34px; top: 3px; height: 44px; border: 3px solid var(--line); border-radius: 8px; background: linear-gradient(90deg, var(--sc, var(--primary)) 0 4px, transparent 4px) 0 0 / calc(100% / var(--turns, 4)) 100%; transition: background-size .3s; }
+.clips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 230px; min-height: 28px; }
+.clip { display: block; width: 12px; height: 22px; border: 3px solid var(--line-soft); border-radius: 6px; opacity: .3; transform: translateY(-10px); transition: opacity .25s, transform .35s; }
+.clip.on { opacity: 1; border-color: var(--line); transform: none; }
+.motorvis { display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3); }
+.pole { width: 54px; height: 100px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: var(--text-lg); border: 3px solid var(--line); color: var(--ink); }
+.pole.n { background: var(--pop-pink); border-radius: 14px 0 0 14px; }
+.pole.s { background: var(--pop-cyan); border-radius: 0 14px 14px 0; }
+.rotorbox { position: relative; width: 120px; height: 100px; border-top: 3px solid var(--line); border-bottom: 3px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.rotor { width: 90px; height: 22px; border-radius: 11px; background: var(--sc, var(--primary)); border: 3px solid var(--line); animation: spin 1.2s linear infinite; }
+.axis { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.genvis { display: flex; align-items: center; justify-content: space-around; margin-bottom: var(--space-3); }
+.crank { position: relative; width: 100px; height: 100px; border: 3px solid var(--line); border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.crankarm { width: 76px; height: 14px; border-radius: 7px; background: var(--sc, var(--primary)); border: 3px solid var(--line); animation: spin 1s linear infinite; }
+.battvis { display: flex; flex-direction: column-reverse; align-items: center; margin-bottom: var(--space-3); }
+.batt { width: 76px; height: 110px; border: 3px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); display: flex; align-items: flex-end; }
+.battfill { width: 100%; height: 0; background: var(--sc, var(--primary)); transition: height .8s cubic-bezier(.3, .8, .3, 1); }
+.battcap { width: 28px; height: 9px; background: var(--line); border-radius: 4px 4px 0 0; }
+.gearvis { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: var(--space-3); min-height: 180px; }
+.gearbox { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 90px; }
+.gear { border-radius: 50%; border: 3px solid var(--line); background: repeating-conic-gradient(var(--sc, var(--primary)) 0 10deg, var(--surface) 10deg 20deg); animation: spin 8s linear infinite; transition: width .3s, height .3s; }
+.gear.g2 { animation-direction: reverse; background: repeating-conic-gradient(var(--st-5) 0 10deg, var(--surface) 10deg 20deg); }
+.gl { font-size: var(--text-xs); font-weight: 800; }
+
+/* Lernlandkarte */
+.hubmain > .small { margin-bottom: var(--space-3); }
+.hubmain .chips { margin-bottom: var(--space-4); }
+.top .stack { margin-top: var(--space-4); border-color: var(--header-line); background: #150a3c; height: 18px; }
+.sg { background: var(--pop-green); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sy { background: var(--pop-yellow); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.sred { background: var(--pop-pink); transition: width .6s cubic-bezier(.3,.8,.3,1); }
+.bk { padding: 0; border-top: 12px solid var(--sc); position: relative; overflow: hidden; }
+.bk[hidden], .kp[hidden] { display: none !important; }
+.bk > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 46px 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-4); }
+.bk > summary::-webkit-details-marker { display: none; }
+.bk > summary::after { content: none; }
+.bnum { width: 46px; height: 46px; border-radius: 14px; background: var(--sc); color: var(--ink); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--line); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); }
+.btxt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.btitle { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); line-height: 1.2; }
+.bcount { font-weight: 700; font-size: var(--text-sm); }
+.bsegs { display: flex; gap: 4px; margin-top: 2px; }
+.bsegs i { display: block; height: 9px; flex: 1; max-width: 46px; border-radius: 5px; background: var(--bar-track); }
+.bsegs i.g { background: var(--pop-green); } .bsegs i.y { background: var(--pop-yellow); } .bsegs i.r { background: var(--pop-pink); }
+.bk[open] > summary { border-bottom: 3px solid var(--line); }
+.kplist { list-style: none; margin: 0; padding: 0; }
+.kp { padding: var(--space-4); border-top: 2px dashed var(--line-soft); }
+.kp:first-child { border-top: none; }
+.kptop { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.kcode { font-weight: 800; background: var(--sc); color: var(--ink); border: 3px solid var(--line); border-radius: 8px; padding: 1px 8px; font-size: var(--text-sm); }
+.ktags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ktag { font-size: var(--text-xs); font-weight: 700; color: var(--muted); border: 2px solid var(--line-soft); border-radius: 999px; padding: 1px 8px; }
+.ktext { font-weight: 700; font-size: var(--text-md); line-height: 1.35; margin: 0 0 var(--space-2); }
+.kapps { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.appchip { font-size: var(--text-sm); font-weight: 800; color: var(--text); background: var(--accent-bg); border: 3px solid var(--line); border-radius: 999px; padding: 4px 12px; text-decoration: none; box-shadow: 0 3px 0 var(--line); }
+@media (hover: hover) { a.appchip:hover { filter: brightness(1.06); } }
+.appchip.plan { background: var(--subtle); border-style: dashed; box-shadow: none; font-weight: 700; color: var(--muted); }
+.amps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.amp { appearance: none; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 6px; border: 3px solid var(--line-soft); border-radius: 14px; background: var(--surface); color: var(--text); font: 800 var(--text-sm)/1.1 var(--font-body); cursor: pointer; transition: transform .1s, background .15s, border-color .15s; }
+@media (hover: hover) { .amp:hover { border-color: var(--line); } }
+.amp:active { transform: translateY(2px); }
+.dotc { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--line); flex: none; }
+.amp.r .dotc { background: var(--pop-pink); } .amp.y .dotc { background: var(--pop-yellow); } .amp.g .dotc { background: var(--pop-green); }
+.amp[aria-pressed="true"] { border-color: var(--line); box-shadow: 0 3px 0 var(--line); font-weight: 900; }
+.amp.r[aria-pressed="true"] { background: var(--bad-bg); } .amp.y[aria-pressed="true"] { background: var(--warn-bg); } .amp.g[aria-pressed="true"] { background: var(--good-bg); }
+.lp { margin-top: var(--space-2); }
+.lp summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
+.lp p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+.chips .btn.on { background: var(--primary); color: var(--on-primary); }
+@media (max-width: 380px) { .amp { font-size: var(--text-xs); } .dotc { display: none; } }
+
+/* Bewegungen: Diagramme, Tabellen, Wagen */
+.chart { width: 100%; max-width: 440px; height: auto; display: block; margin: var(--space-2) auto var(--space-3); }
+.chart .gr { stroke: var(--line-soft); stroke-width: 1; }
+.chart .ax { stroke: var(--line); stroke-width: 2.5; stroke-linecap: round; }
+.chart .tk { fill: var(--muted); font: 700 11px var(--font-body); }
+.chart .lb { fill: var(--text); font: 800 12px var(--font-body); }
+.chart .cv { fill: none; stroke: var(--sc, var(--primary)); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ln2 { stroke: var(--pop-pink); }
+.chart .pt { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 2.5; }
+.chart .fit { stroke: var(--text); stroke-width: 2.5; stroke-dasharray: 7 5; }
+.chart .mk { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 3; }
+.opt svg.mini { display: block; width: 100%; max-width: 160px; height: auto; }
+.mini .ax { stroke: var(--text); stroke-width: 2.5; stroke-linecap: round; }
+.mini .cv { fill: none; stroke: var(--sc, var(--primary)); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+.opt:has(svg.mini) { justify-content: flex-start; align-items: center; }
+.dtab { border-collapse: collapse; margin: 0 0 var(--space-3); font-size: var(--text-base); max-width: 100%; }
+.dtab th, .dtab td { border: 2px solid var(--line); padding: 4px 10px; text-align: center; font-weight: 700; }
+.dtab th { background: var(--accent-bg); text-align: left; font-size: var(--text-sm); }
+.track { position: relative; height: 54px; margin: var(--space-4) 44px var(--space-5) 6px; border-bottom: 4px solid var(--line); }
+.car { position: absolute; bottom: 4px; left: 0; width: 36px; height: 22px; margin-left: -4px; background: var(--sc, var(--primary)); border: 3px solid var(--line); border-radius: 8px; }
+.car.runner { border-radius: 50% 50% 8px 8px; width: 26px; height: 30px; }
+.marks { position: absolute; left: 0; right: 0; bottom: -4px; height: 0; }
+.marks i { position: absolute; bottom: -22px; width: 22px; margin-left: -11px; text-align: center; font: 800 11px var(--font-mono); font-style: normal; color: var(--text); }
+.marks i::before { content: ""; position: absolute; left: 50%; top: -14px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--pop-yellow); border: 2px solid var(--line); }
+.lg { display: inline-block; min-width: 24px; text-align: center; font-weight: 800; border: 2px solid var(--line); border-radius: 6px; color: var(--ink); }
+.lg.a { background: var(--primary); color: var(--on-primary); } .lg.b { background: var(--pop-pink); }
+
+/* 7_1 Naturwissenschaften: Sortierspiel, Draht, Mikroskop, Zellen */
+.top h1.long { font-size: 2.3rem; line-height: 1.08; overflow-wrap: anywhere; }
+.gcard { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); line-height: 1.25; margin: 0 0 var(--space-3); }
+.gbtns { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); }
+.gbtns .btn.on { background: var(--primary); color: var(--on-primary); }
+.wirevis { display: flex; align-items: center; gap: 6px; margin: var(--space-3) 0; }
+.batt2 { flex: none; width: 44px; height: 30px; border: 3px solid var(--line); border-radius: 6px; background: var(--pop-yellow); }
+.wire { height: 12px; border: 2px solid var(--line); border-radius: 6px; transition: width .35s ease, background .35s ease; max-width: 100%; }
+.field { width: 100%; max-width: 250px; aspect-ratio: 1; margin: var(--space-3) auto; border: 4px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--surface); }
+.cells { width: 100%; height: 100%; background-color: var(--accent-bg); background-image: linear-gradient(var(--line) 2px, transparent 2px), linear-gradient(90deg, var(--line) 2px, transparent 2px); background-size: var(--cs, 20px) var(--cs, 20px); background-position: center; transition: background-size .45s ease; }
+.cellbox { position: relative; width: 100%; max-width: 300px; height: 170px; margin: var(--space-3) auto; border: 4px solid var(--line); border-radius: 8px; background: var(--accent-bg); }
+.cellbox.onion { background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.cdots { position: absolute; inset: 14px; }
+.cdots i { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--pop-green); border: 3px solid var(--line); }
+.proto { background: var(--pop-pink); border: 3px solid var(--line); border-radius: 14px; transition: width .7s ease, height .7s ease; }
+.gbtns .btn.good { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+.gbtns .btn.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.sim > .btn.block { margin-top: var(--space-3); }
+
+/* Touch: schnelle, zuverlässige Tipps */
+button, a, [data-act], input, label, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* Versteckte Elemente bleiben versteckt, auch wenn ihr Stil eine Anzeige vorgibt */
+[hidden] { display: none !important; }
+
+/* Titel und Maskottchen: nichts überlappt, nichts fängt Tipps ab */
+.top h1 { font-size: clamp(1.9rem, 8vw, 3.2rem); overflow-wrap: anywhere; }
+.top h1.long { font-size: clamp(1.6rem, 6.6vw, 2.3rem); }
+.herotxt { flex: 1; min-width: 0; }
+.watti.mini, .sumw { pointer-events: none; }
+.round .qcard { margin-top: 58px; }
+
+/* 7_5 Energie: Würfel, Ketten, Wärmetransport */
+.cubes { display: flex; gap: 6px; flex-wrap: wrap; margin: var(--space-3) 0; }
+.cube { display: block; width: 30px; height: 30px; border: 3px solid var(--line); border-radius: 7px; transition: background .45s ease; }
+.cube.lage { background: var(--st-5); } .cube.bew { background: var(--pop-yellow); } .cube.therm { background: var(--pop-pink); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-2); }
+.lgd { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-radius: 4px; }
+.lgd.lage { background: var(--st-5); } .lgd.bew { background: var(--pop-yellow); } .lgd.therm { background: var(--pop-pink); }
+.chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: var(--space-3) 0; }
+.cbox { border: 3px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--accent-bg); font-weight: 800; font-size: var(--text-sm); max-width: 120px; text-align: center; }
+.cbox.w { background: var(--pop-yellow); color: var(--ink); }
+.carrow { font-size: 1.4rem; font-weight: 800; }
+.cend { flex: 1; min-width: 150px; }
+.bfill.th { background: var(--pop-pink); }
+.wdemo { display: flex; align-items: center; gap: 8px; height: 120px; margin: var(--space-3) 0; }
+.hot, .cold { flex: none; width: 54px; height: 96px; border: 3px solid var(--line); border-radius: 12px; }
+.hot { background: var(--pop-pink); } .cold { background: var(--pop-cyan); }
+.ws { flex: 1; height: 100%; display: flex; align-items: center; justify-content: space-around; overflow: hidden; }
+.ws i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--pop-yellow); border: 2px solid var(--line); }
+.wdemo[data-m="leitung"] .ws i { animation: jig .9s ease-in-out infinite; }
+.wdemo[data-m="stroemung"] .ws i { animation: loopy 2.2s linear infinite; }
+.wdemo[data-m="strahlung"] .ws i { animation: ray 1.4s linear infinite; border-radius: 3px; width: 24px; height: 8px; }
+.ws i:nth-child(1) { animation-delay: 0s; } .ws i:nth-child(2) { animation-delay: .15s; } .ws i:nth-child(3) { animation-delay: .3s; }
+.ws i:nth-child(4) { animation-delay: .45s; } .ws i:nth-child(5) { animation-delay: .6s; } .ws i:nth-child(6) { animation-delay: .75s; }
+@keyframes jig { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+@keyframes loopy { 0% { transform: translate(0, -34px); } 25% { transform: translate(12px, 0); } 50% { transform: translate(0, 34px); } 75% { transform: translate(-12px, 0); } 100% { transform: translate(0, -34px); } }
+@keyframes ray { 0% { transform: translateX(-30px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(30px); opacity: 0; } }
+
+/* 7_7 Chemie: Periodensystem und Fotosynthese */
+.pscroll { overflow-x: auto; padding-bottom: var(--space-2); }
+.pse { border-collapse: separate; border-spacing: 3px; min-width: max-content; }
+.pse td { width: 38px; height: 44px; padding: 0; }
+.el { appearance: none; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; border: 3px solid var(--line); border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink); line-height: 1.05; }
+.el b { font-size: 0.95rem; } .el small { font-size: 0.6rem; font-weight: 700; }
+.el.m { background: var(--pop-cyan); } .el.n { background: var(--pop-yellow); } .el.e { background: var(--pop-pink); } .el.h { background: var(--pop-green); }
+.el.sel { outline: 4px solid var(--primary); outline-offset: 1px; }
+.lgd.m { background: var(--pop-cyan); } .lgd.n { background: var(--pop-yellow); } .lgd.e { background: var(--pop-pink); } .lgd.h { background: var(--pop-green); }
+.plant { position: relative; height: 120px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); overflow: hidden; }
+.plant::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 8px; height: 70px; margin-left: -4px; background: var(--pop-green); border: 2px solid var(--line); border-radius: 4px; }
+.bubbles { position: absolute; inset: 0; }
+.bubbles i { position: absolute; bottom: 24px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); opacity: 0; }
+.bubbles.on i { animation: rise2 var(--bd, 2s) linear infinite; }
+.bubbles i:nth-child(1) { left: 44%; animation-delay: 0s; } .bubbles i:nth-child(2) { left: 48%; animation-delay: .4s; } .bubbles i:nth-child(3) { left: 52%; animation-delay: .9s; }
+.bubbles i:nth-child(4) { left: 56%; animation-delay: 1.3s; } .bubbles i:nth-child(5) { left: 46%; animation-delay: 1.7s; } .bubbles i:nth-child(6) { left: 54%; animation-delay: 2.1s; }
+@keyframes rise2 { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+
+/* 8_1 Stromkreise */
+.circ { display: flex; align-items: center; gap: 4px; margin: var(--space-3) 0; }
+.cbat { flex: none; border: 3px solid var(--line); border-radius: 8px; padding: 10px; background: var(--pop-yellow); color: var(--ink); font-weight: 800; font-size: var(--text-sm); }
+.cwire { flex: 1; height: 10px; border: 2px solid var(--line); border-radius: 5px; background: var(--surface); }
+.cwire.flow { background: repeating-linear-gradient(90deg, var(--pop-yellow) 0 12px, var(--surface) 12px 24px); background-size: 24px 100%; animation: flowx 1s linear infinite; }
+.clamp { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); }
+.clamp.on { background: var(--pop-yellow); box-shadow: 0 0 18px var(--pop-yellow); }
+.lamps { display: flex; gap: 10px; margin: var(--space-3) 0; }
+.lp { display: block; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--line); background: var(--surface); }
+.lp.on { background: var(--pop-yellow); }
+.gear { display: inline-block; font-size: 1.3rem; }
+.gear.m, .gear.g { animation: spin 1.4s linear infinite; }
+.gear.g { animation-direction: reverse; }
+@keyframes flowx { to { background-position: 24px 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 7_3 Sinne: Schallwelle, Ohr, Linse, Auge */
+.wave { position: relative; height: 64px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); overflow: hidden; }
+.wave i { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--primary); }
+.ohrchain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--space-3) 0; }
+.ostep { border: 3px solid var(--line); border-radius: 10px; padding: 6px 8px; font-weight: 700; font-size: var(--text-sm); background: var(--surface); }
+.ostep.on { background: var(--pop-yellow); color: var(--ink); }
+.lensvg { display: block; width: 100%; max-width: 360px; margin: var(--space-3) auto; }
+.lensvg .ax { stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 4; }
+.lensvg .ray { stroke: var(--pop-pink); stroke-width: 3; fill: none; }
+.lensvg .vray { stroke: var(--pop-pink); stroke-width: 2; stroke-dasharray: 4 4; }
+.lensvg .lens { fill: var(--accent-bg); stroke: var(--line); stroke-width: 3; }
+.lensvg .fp { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 2; }
+.lensvg .eye { fill: var(--surface); stroke: var(--line); stroke-width: 3; }
+.lensvg .ret { stroke: var(--primary); stroke-width: 6; stroke-linecap: round; }
+
+/* Trophäen */
+.trophybar { appearance: none; display: flex; align-items: center; gap: var(--space-3); width: 100%; margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); border: 3px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 4px 0 var(--line); }
+.trophybar .tb { display: flex; flex-direction: column; flex: 1; }
+.trophybar .tb small { color: var(--ink-soft, var(--ink)); }
+.tnew { background: var(--pop-pink); color: var(--ink); border: 2px solid var(--line); border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: var(--text-sm); }
+.ticon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 1.6rem; border: 3px solid var(--line); border-radius: 50%; background: var(--pop-yellow); }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+.trophy { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: var(--space-3); border: 3px solid var(--line); border-radius: 14px; background: var(--surface); }
+.trophy b { font-family: var(--font-display); }
+.trophy small { color: var(--ink); opacity: .85; }
+.trophy.locked { opacity: .65; }
+.trophy.locked .ticon { background: var(--subtle); filter: grayscale(1); }
+.trophy .tdone { font-size: var(--text-sm); font-weight: 800; color: var(--primary); }
+
+/* Schulwertung und Klassenduell */
+.board li .nm small { display: block; font-size: 0.75rem; font-weight: 600; opacity: .8; }
+.clsc .seg3 { margin: var(--space-2) 0; }
+
+/* 8_5 Kräfte: Kraftmesser */
+.spring { display: flex; flex-direction: column; align-items: center; height: 150px; margin: var(--space-3) 0; }
+.sp { width: 16px; border: 2px solid var(--line); border-radius: 8px; background: repeating-linear-gradient(0deg, var(--line) 0 4px, var(--accent-bg) 4px 8px); transition: height .25s ease; }
+.wgt { height: 26px; border: 3px solid var(--line); border-radius: 6px; background: var(--pop-yellow); transition: width .25s ease; }
+.lensvg .rope { stroke: var(--line); stroke-width: 4; }
+.lensvg .knot { fill: var(--pop-yellow); stroke: var(--line); stroke-width: 3; }
+.lensvg .kl { stroke-width: 6; stroke-linecap: round; }
+.lensvg .ka { stroke: var(--pop-pink); } .lensvg .kb { stroke: var(--primary); } .lensvg .kr { stroke: var(--ink); }
+
+/* Startseite mit allen Kapiteln */
+.grp { margin: var(--space-5) 0 var(--space-2); font-family: var(--font-display); }
+.stlist { list-style: none; padding: 0; margin: var(--space-2) 0; }
+.stlink { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); margin: var(--space-2) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.stlink .stn { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 30px; height: 30px; border: 3px solid var(--line); border-radius: 50%; background: var(--sc, var(--primary)); font-weight: 800; }
+.stlink .stt { flex: 1; display: flex; flex-direction: column; }
+.stlink .stt small { opacity: .8; }
+.stlink .sts { white-space: nowrap; font-weight: 800; }
+.planc { opacity: .75; border-style: dashed; }
+.bcnt { margin-left: auto; font-weight: 800; }
+
+/* 8_4 Chemie: Feuer, Gleichungen, Energiediagramm */
+.flamebox { display: flex; justify-content: center; align-items: flex-end; height: 90px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); }
+.flame { width: 44px; height: 64px; margin-bottom: 8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--pop-yellow); border: 3px solid var(--line); opacity: .12; transition: opacity .3s ease; }
+.flame.on { opacity: 1; background: var(--pop-pink); animation: flick .8s ease-in-out infinite alternate; }
+@keyframes flick { from { transform: scale(1, 1); } to { transform: scale(.92, 1.08); } }
+.eq { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: var(--space-3) 0; font-weight: 700; }
+.eq .term { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); }
+.eq .term .btn { min-height: 30px; padding: 2px 8px; }
+.eq .arr { font-size: 1.3rem; }
+.lensvg .eline { fill: none; stroke: var(--primary); stroke-width: 4; stroke-linejoin: round; }
+
+/* 9_1 Optik */
+.lensvg .mirror { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+.lensvg .ray2 { stroke: var(--primary); stroke-width: 3; fill: none; }
+.lensvg .water { fill: var(--accent-bg); stroke: none; }
+.swatch { width: 100%; height: 72px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: rgb(255, 255, 0); }
+
+/* 9_3 Elektronik: LED-Anzeige */
+.ledbox { display: flex; justify-content: center; align-items: center; height: 80px; margin: var(--space-3) 0; border: 3px solid var(--line); border-radius: 12px; background: var(--accent-bg); }
+.led { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--line); background: var(--subtle); transition: background .25s ease, box-shadow .25s ease; }
+.led.dim { background: var(--pop-yellow); opacity: .55; }
+.led.on { background: var(--pop-yellow); box-shadow: 0 0 22px var(--pop-yellow); }
+.led.dead { background: var(--ink); }
+
+/* 9_5 Genetik: DNA-Stränge */
+.dna { margin: var(--space-3) 0; overflow-x: auto; }
+.dstrang { display: flex; gap: 4px; margin: 4px 0; }
+.base { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--line); border-radius: 8px; font-weight: 800; background: var(--surface); }
+.base.bA { background: var(--pop-yellow); } .base.bT { background: var(--pop-cyan); } .base.bG { background: var(--pop-pink); } .base.bC { background: var(--pop-green); }
+.base.leer { opacity: .55; }
+</style>
+</head>
+<body>
+<div id="app"><noscript><main class="wrap"><p>Diese Lern-App braucht JavaScript.</p></main></noscript></div>
+<script>
+(function () {
+'use strict';
+const META = {"leistung": {"id": "leistung", "storeKey": "halingen-leistung-lernapp-v1", "title": "Leistung", "lead": "Wie schnell wird Energie umgewandelt?", "stations": [{"id": "s1", "nr": 1, "title": "Arbeit und Lageenergie", "sub": "W = F · s"}, {"id": "s2", "nr": 2, "title": "Leistung: Arbeit pro Zeit", "sub": "P = W : t"}, {"id": "s3", "nr": 3, "title": "Einheiten: W, kW und PS", "sub": "1 W = 1 J/s"}, {"id": "s4", "nr": 4, "title": "Elektrische Leistung", "sub": "P = U · I"}, {"id": "s5", "nr": 5, "title": "Energie und Kosten", "sub": "E = P · t"}, {"id": "s6", "nr": 6, "title": "Wirkungsgrad", "sub": "η = E_nutz : E_zu"}], "levels": [{"xp": 0, "name": "Stirnlampe"}, {"xp": 80, "name": "E-Bike-Motor"}, {"xp": 200, "name": "Föhn"}, {"xp": 380, "name": "Traktor"}, {"xp": 620, "name": "Lokomotive"}, {"xp": 920, "name": "Kraftwerk"}], "page": "index.html"}, "motor": {"id": "motor", "storeKey": "halingen-motor-lernapp-v1", "title": "Motor", "lead": "Wie wird aus Strom Bewegung und aus Bewegung Strom?", "stations": [{"id": "m1", "nr": 1, "title": "Magnet und Elektromagnet", "sub": "Strom erzeugt ein Magnetfeld"}, {"id": "m2", "nr": 2, "title": "Der Elektromotor", "sub": "Kraft im Magnetfeld"}, {"id": "m3", "nr": 3, "title": "Der Generator", "sub": "Bewegung wird zu Strom"}, {"id": "m4", "nr": 4, "title": "Leistung und Wirkungsgrad", "sub": "η = P_mech : P_el"}, {"id": "m5", "nr": 5, "title": "Getriebe", "sub": "Drehzahl gegen Kraft"}, {"id": "m6", "nr": 6, "title": "Motoren im Alltag", "sub": "Akku, Reichweite, Rekuperation"}], "levels": [{"xp": 0, "name": "Spielzeugmotor"}, {"xp": 80, "name": "Ventilator"}, {"xp": 200, "name": "Akkuschrauber"}, {"xp": 380, "name": "Elektroauto"}, {"xp": 620, "name": "Lokomotive"}, {"xp": 920, "name": "Kraftwerk"}], "page": "motor.html"}, "nt7-4": {"id": "nt7-4", "storeKey": "halingen-nt7-4-v1", "title": "Bewegungen erkunden", "lead": "Wie schnell, wie gleichmässig, wie lange?", "stations": [{"id": "b1", "nr": 1, "title": "Bewegungen beschreiben", "sub": "gleichförmig, beschleunigt, verzögert"}, {"id": "b2", "nr": 2, "title": "Geschwindigkeit berechnen", "sub": "v = s : t"}, {"id": "b3", "nr": 3, "title": "Einheiten umrechnen", "sub": "m/s ↔ km/h: · 3,6"}, {"id": "b4", "nr": 4, "title": "Zeit-Weg-Diagramm", "sub": "Achsen, Punkte, Trendgerade"}, {"id": "b5", "nr": 5, "title": "Gleichförmige Bewegung", "sub": "Gerade im s-t, waagrecht im v-t"}, {"id": "b6", "nr": 6, "title": "Beschleunigt und verzögert", "sub": "Parabel, Gerade, flacher"}], "levels": [{"xp": 0, "name": "Schnecke"}, {"xp": 80, "name": "Fussgänger"}, {"xp": 200, "name": "Velo"}, {"xp": 380, "name": "Auto"}, {"xp": 620, "name": "Schnellzug"}, {"xp": 920, "name": "Flugzeug"}], "page": "7_4_Bewegungen_erkunden.html"}, "nt7-1": {"id": "nt7-1", "storeKey": "halingen-nt7-1-v1", "title": "Naturwissenschaften erkunden", "lead": "Beobachten, vermuten, experimentieren", "stations": [{"id": "w1", "nr": 1, "title": "Naturwissenschaften im Alltag", "sub": "Gebiete und Pseudowissenschaft"}, {"id": "w2", "nr": 2, "title": "Der Weg zur Erkenntnis", "sub": "Frage, Vermutung, Experiment"}, {"id": "w3", "nr": 3, "title": "Erfindungen und Entdeckungen", "sub": "Wie sie das Leben verändern"}, {"id": "w4", "nr": 4, "title": "Das Mikroskop", "sub": "Gesamtvergrösserung"}, {"id": "w5", "nr": 5, "title": "Zellen beobachten", "sub": "Wasserpest und Zwiebelhaut"}, {"id": "w6", "nr": 6, "title": "Vom Samen zur Pflanze", "sub": "Quellung, Keimung, Kontrollexperiment"}], "levels": [{"xp": 0, "name": "Neugierig"}, {"xp": 80, "name": "Beobachterin"}, {"xp": 200, "name": "Forscher"}, {"xp": 380, "name": "Experimentatorin"}, {"xp": 620, "name": "Auswerter"}, {"xp": 920, "name": "Entdeckerin"}], "page": "7_1_Naturwissenschaften_erkunden.html"}, "nt7-5": {"id": "nt7-5", "storeKey": "halingen-nt7-5-v1", "title": "Energie erkunden", "lead": "Energie wandelt sich um und geht nicht verloren", "stations": [{"id": "e1", "nr": 1, "title": "Energieformen", "sub": "Energie ist überall"}, {"id": "e2", "nr": 2, "title": "Energieumwandlung", "sub": "Aus einer Form wird eine andere"}, {"id": "e3", "nr": 3, "title": "Energieentwertung", "sub": "Die wertvolle Energie nimmt ab"}, {"id": "e4", "nr": 4, "title": "Energie speichern und nutzen", "sub": "Joule und Energieträger"}, {"id": "e5", "nr": 5, "title": "Transport von thermischer Energie", "sub": "Leitung, Strömung, Strahlung"}, {"id": "e6", "nr": 6, "title": "Energie geht nicht verloren", "sub": "Energieerhaltung und Energiewürfel"}], "levels": [{"xp": 0, "name": "Funke"}, {"xp": 80, "name": "Glühwürmchen"}, {"xp": 200, "name": "Batterie"}, {"xp": 380, "name": "Solarzelle"}, {"xp": 620, "name": "Windrad"}, {"xp": 920, "name": "Kraftwerk"}], "page": "7_5_Energie_erkunden.html"}, "nt7-7": {"id": "nt7-7", "storeKey": "halingen-nt7-7-v1", "title": "Chemische Reaktionen untersuchen", "lead": "Aus Stoffen werden neue Stoffe", "stations": [{"id": "c1", "nr": 1, "title": "Chemische Reaktion oder nicht?", "sub": "Ausgangsstoffe und Produkte"}, {"id": "c2", "nr": 2, "title": "Eigenschaften und Massenerhaltung", "sub": "Aktivierung, Tempo, Energie, retour"}, {"id": "c3", "nr": 3, "title": "Energie bei chemischen Reaktionen", "sub": "Würfelmodell und Aktivierungsenergie"}, {"id": "c4", "nr": 4, "title": "Fotosynthese", "sub": "Aus Licht wird chemische Energie"}, {"id": "c5", "nr": 5, "title": "Elemente und Verbindungen", "sub": "Atome nach Dalton"}, {"id": "c6", "nr": 6, "title": "Das Periodensystem", "sub": "Ordnung der Elemente"}], "levels": [{"xp": 0, "name": "Atom"}, {"xp": 80, "name": "Molekül"}, {"xp": 200, "name": "Reagenzglas"}, {"xp": 380, "name": "Brenner"}, {"xp": 620, "name": "Labor"}, {"xp": 920, "name": "Periodensystem"}], "page": "7_7_Chemische_Reaktionen_untersuchen.html"}, "nt8-1": {"id": "nt8-1", "storeKey": "halingen-nt8-1-v1", "title": "Stromkreise untersuchen", "lead": "Stromstärke, Spannung und Widerstand", "stations": [{"id": "k1", "nr": 1, "title": "Stromkreise und Fehlersuche", "sub": "Wenn ein Gerät nicht funktioniert"}, {"id": "k2", "nr": 2, "title": "Serie- und Parallelschaltung", "sub": "Lampen verbinden"}, {"id": "k3", "nr": 3, "title": "Stromstärke, Spannung, Widerstand", "sub": "Das ohmsche Gesetz"}, {"id": "k4", "nr": 4, "title": "Knoten- und Maschenregel", "sub": "Regeln im verzweigten Stromkreis"}, {"id": "k5", "nr": 5, "title": "Wirkungen des elektrischen Stroms", "sub": "Wärme, Licht, Chemie, Magnetismus"}, {"id": "k6", "nr": 6, "title": "Elektromotor und Generator", "sub": "Zwei Richtungen der Energieumwandlung"}], "levels": [{"xp": 0, "name": "Pol"}, {"xp": 80, "name": "Draht"}, {"xp": 200, "name": "Lämpchen"}, {"xp": 380, "name": "Schalter"}, {"xp": 620, "name": "Elektromagnet"}, {"xp": 920, "name": "Generator"}], "page": "8_1_Stromkreise_untersuchen.html"}, "nt7-3": {"id": "nt7-3", "storeKey": "halingen-nt7-3-v1", "title": "Reize und Sinne untersuchen", "lead": "Hören, Sehen und Reagieren", "stations": [{"id": "r1", "nr": 1, "title": "Sinne und ihr Zusammenspiel", "sub": "Geschmack, Aroma und Sinnesorgane"}, {"id": "r2", "nr": 2, "title": "Reize und Reaktionen", "sub": "Reflexe und bewusste Reaktionen"}, {"id": "r3", "nr": 3, "title": "Hören und Schall", "sub": "Richtungshören, Schallausbreitung"}, {"id": "r4", "nr": 4, "title": "Das Gehör und Gehörschutz", "sub": "Vom Trommelfell zur Hörschnecke"}, {"id": "r5", "nr": 5, "title": "Linsen und Auge", "sub": "Licht, Brennweite, Akkommodation"}, {"id": "r6", "nr": 6, "title": "Sehfehler, Netzhaut und Tiersinne", "sub": "Sehen mit Zapfen, Stäbchen und Spezialorganen"}], "levels": [{"xp": 0, "name": "Sinneszelle"}, {"xp": 80, "name": "Nerv"}, {"xp": 200, "name": "Gehirn"}, {"xp": 380, "name": "Hörschnecke"}, {"xp": 620, "name": "Linse"}, {"xp": 920, "name": "Falkenauge"}], "page": "7_3_Reize_und_Sinne_untersuchen.html"}, "nt8-5": {"id": "nt8-5", "storeKey": "halingen-nt8-5-v1", "title": "Kräfte, Arbeit und Leistung erforschen", "lead": "Kraft, Weg, Arbeit und Zeit", "stations": [{"id": "f1", "nr": 1, "title": "Kräfte und Gewichtskraft", "sub": "Wirkungen, Masse und Newton"}, {"id": "f2", "nr": 2, "title": "Reibungskräfte", "sub": "Haften, Gleiten, Rollen"}, {"id": "f3", "nr": 3, "title": "Kraftpfeile und Gesamtkraft", "sub": "Addieren, Subtrahieren, Kraft und Gegenkraft"}, {"id": "f4", "nr": 4, "title": "Kräfte zerlegen", "sub": "Kräfteparallelogramm"}, {"id": "f5", "nr": 5, "title": "Kraft sparen", "sub": "Schiefe Ebene, Hebel, Flaschenzug"}, {"id": "f6", "nr": 6, "title": "Arbeit und Leistung", "sub": "W = F · s und P = W : t"}], "levels": [{"xp": 0, "name": "Feder"}, {"xp": 80, "name": "Hebel"}, {"xp": 200, "name": "Rampe"}, {"xp": 380, "name": "Flaschenzug"}, {"xp": 620, "name": "Kran"}, {"xp": 920, "name": "Newton"}], "page": "8_5_Kraefte_Arbeit_und_Leistung_erforschen.html"}, "nt8-2": {"id": "nt8-2", "storeKey": "halingen-nt8-2-v1", "title": "Gewässer-Ökosysteme erforschen", "lead": "Weiher, Bach und Trinkwasser", "stations": [{"id": "g1", "nr": 1, "title": "Ökosystem und Flaschengarten", "sub": "Lebensraum, Lebewesen, Wechselwirkungen"}, {"id": "g2", "nr": 2, "title": "Weiher und Nahrungsnetz", "sub": "Wer frisst wen?"}, {"id": "g3", "nr": 3, "title": "Unsichtbares im Wasser", "sub": "Nährstoffe, Mikroverunreinigungen, Trübung"}, {"id": "g4", "nr": 4, "title": "Bäche und Selbstreinigung", "sub": "Leitorganismen und Fliessgewässer"}, {"id": "g5", "nr": 5, "title": "Fliessgewässer untersuchen", "sub": "Daten sammeln und auswerten"}, {"id": "g6", "nr": 6, "title": "Menschen und Gewässer", "sub": "Renaturierung, Überdüngung, Trinkwasser"}], "levels": [{"xp": 0, "name": "Wassertropfen"}, {"xp": 80, "name": "Bach"}, {"xp": 200, "name": "Weiher"}, {"xp": 380, "name": "See"}, {"xp": 620, "name": "Fluss"}, {"xp": 920, "name": "Ozean"}], "page": "8_2_Gewaesser_Oekosysteme_erforschen.html"}, "nt8-3": {"id": "nt8-3", "storeKey": "halingen-nt8-3-v1", "title": "Funktionen des Körpers analysieren", "lead": "Ernährung, Verdauung und Abwehr", "stations": [{"id": "h1", "nr": 1, "title": "Gesundheit und Ernährung", "sub": "Hauptnährstoffe und Energie"}, {"id": "h2", "nr": 2, "title": "Nährstoffe nachweisen", "sub": "Experimente mit Lebensmitteln"}, {"id": "h3", "nr": 3, "title": "Der Weg der Nahrung", "sub": "Verdauung und Stoffwechsel"}, {"id": "h4", "nr": 4, "title": "Krankheitserreger und Infektionen", "sub": "Viren, Bakterien, Pilze und STI"}, {"id": "h5", "nr": 5, "title": "Immunsystem und Blutgruppen", "sub": "Antigen und Antikörper"}, {"id": "h6", "nr": 6, "title": "Impfen, Krebs und Medikamente", "sub": "Vorbeugen und richtig handeln"}], "levels": [{"xp": 0, "name": "Zelle"}, {"xp": 80, "name": "Gewebe"}, {"xp": 200, "name": "Organ"}, {"xp": 380, "name": "Organsystem"}, {"xp": 620, "name": "Immunzelle"}, {"xp": 920, "name": "Körper-Profi"}], "page": "8_3_Funktionen_des_Koerpers_analysieren.html"}, "nt8-4": {"id": "nt8-4", "storeKey": "halingen-nt8-4-v1", "title": "Chemische Reaktionen erforschen", "lead": "Sauerstoff, Energie, Ionen und Säuren", "stations": [{"id": "q1", "nr": 1, "title": "Feuer und Verbrennung", "sub": "Reaktionen mit Sauerstoff"}, {"id": "q2", "nr": 2, "title": "Sauerstoff abgeben", "sub": "Elektrolyse und Reaktionsgleichungen"}, {"id": "q3", "nr": 3, "title": "Sauerstoff tauschen", "sub": "Thermit, Erze und Reduktionsmittel"}, {"id": "q4", "nr": 4, "title": "Energie bei Reaktionen", "sub": "exotherm, endotherm, Energiediagramm"}, {"id": "q5", "nr": 5, "title": "Atome, Ionen und Bindungen", "sub": "Salze, Metalle und Moleküle"}, {"id": "q6", "nr": 6, "title": "Säuren, Basen und pH-Wert", "sub": "Neutralisation"}], "levels": [{"xp": 0, "name": "Zündholz"}, {"xp": 80, "name": "Flamme"}, {"xp": 200, "name": "Hochofen"}, {"xp": 380, "name": "Ion"}, {"xp": 620, "name": "Salzgitter"}, {"xp": 920, "name": "Edelgas"}], "page": "8_4_Chemische_Reaktionen_erforschen.html"}, "nt9-1": {"id": "nt9-1", "storeKey": "halingen-nt9-1-v1", "title": "Optische Phänomene erkunden", "lead": "Spiegel, Linsen, Brechung und Farben", "stations": [{"id": "o1", "nr": 1, "title": "Licht und Sehen", "sub": "Wie Licht zum Auge kommt"}, {"id": "o2", "nr": 2, "title": "Spiegel und Reflexion", "sub": "Reflexionsgesetz und Spiegelbild"}, {"id": "o3", "nr": 3, "title": "Lichtbrechung", "sub": "Brechungsgesetz und optische Hebung"}, {"id": "o4", "nr": 4, "title": "Totalreflexion", "sub": "Glasfaser und Fata Morgana"}, {"id": "o5", "nr": 5, "title": "Linsen und optische Geräte", "sub": "Abbildung, Kamera, Lupe"}, {"id": "o6", "nr": 6, "title": "Farben und Licht", "sub": "Farbmischung, Spektrum, Täuschung"}], "levels": [{"xp": 0, "name": "Lichtpunkt"}, {"xp": 80, "name": "Lichtstrahl"}, {"xp": 200, "name": "Spiegel"}, {"xp": 380, "name": "Prisma"}, {"xp": 620, "name": "Linse"}, {"xp": 920, "name": "Regenbogen"}], "page": "9_1_Optische_Phaenomene_erkunden.html"}, "nt9-2": {"id": "nt9-2", "storeKey": "halingen-nt9-2-v1", "title": "Atommodelle nutzen", "lead": "Aufbau, Bindung, Redox und Kernenergie", "stations": [{"id": "a1", "nr": 1, "title": "Atome und Denkmodelle", "sub": "Von Dalton bis zum Orbital"}, {"id": "a2", "nr": 2, "title": "Rutherford und Bohr", "sub": "Atomkern, Bahnen und Schalen"}, {"id": "a3", "nr": 3, "title": "Aufbau der Atome", "sub": "Protonen, Neutronen, Elektronen"}, {"id": "a4", "nr": 4, "title": "Edelgasregel und Bindungen", "sub": "Ionenbindung und Elektronenpaarbindung"}, {"id": "a5", "nr": 5, "title": "Redoxreaktionen und Strom", "sub": "Oxidation, Reduktion, Batterie"}, {"id": "a6", "nr": 6, "title": "Radioaktivität und Kernenergie", "sub": "Zerfall, Spaltung und Fusion"}], "levels": [{"xp": 0, "name": "Atom"}, {"xp": 80, "name": "Elektron"}, {"xp": 200, "name": "Isotop"}, {"xp": 380, "name": "Ion"}, {"xp": 620, "name": "Reaktor"}, {"xp": 920, "name": "Sonne"}], "page": "9_2_Atommodelle_nutzen.html"}, "nt9-3": {"id": "nt9-3", "storeKey": "halingen-nt9-3-v1", "title": "Elektronische Schaltungen untersuchen", "lead": "LED, Widerstand, Halbleiter und Sensoren", "stations": [{"id": "e1", "nr": 1, "title": "Elektronik und LEDs", "sub": "Aufbau und Anwendungen"}, {"id": "e2", "nr": 2, "title": "Widerstände und Vorwiderstand", "sub": "LED richtig betreiben"}, {"id": "e3", "nr": 3, "title": "Halbleiter", "sub": "Zwischen Leiter und Isolator"}, {"id": "e4", "nr": 4, "title": "Dotierung, Diode und Transistor", "sub": "Halbleiter-Bauteile"}, {"id": "e5", "nr": 5, "title": "Sensoren", "sub": "Elektronische «Sinnesorgane»"}, {"id": "e6", "nr": 6, "title": "Schaltungen lesen und bauen", "sub": "Poti, Strom und Schaltplan"}], "levels": [{"xp": 0, "name": "Draht"}, {"xp": 80, "name": "LED"}, {"xp": 200, "name": "Widerstand"}, {"xp": 380, "name": "Transistor"}, {"xp": 620, "name": "Sensor"}, {"xp": 920, "name": "Mikrochip"}], "page": "9_3_Elektronische_Schaltungen_untersuchen.html"}, "nt9-4": {"id": "nt9-4", "storeKey": "halingen-nt9-4-v1", "title": "Energie und Leistung erfassen", "lead": "Lage, Bewegung, Wirkungsgrad und Kilowattstunden", "stations": [{"id": "n1", "nr": 1, "title": "Energie und Leistung", "sub": "Formen, Umwandlung und Leistung"}, {"id": "n2", "nr": 2, "title": "Lage- und Bewegungsenergie", "sub": "E = m · g · h und E = ½ · m · v²"}, {"id": "n3", "nr": 3, "title": "Wirkungsgrad", "sub": "Wie viel Energie wird nutzbar?"}, {"id": "n4", "nr": 4, "title": "Leistung im Alltag", "sub": "Watt, Kilowattstunde und 2000 Watt"}, {"id": "n5", "nr": 5, "title": "Energieversorgung", "sub": "Anlagen, Energieträger und Kosten"}, {"id": "n6", "nr": 6, "title": "Energie bewusst nutzen", "sub": "Verhalten, Stand-by und Bauen"}], "levels": [{"xp": 0, "name": "Funke"}, {"xp": 80, "name": "Wasserrad"}, {"xp": 200, "name": "Turbine"}, {"xp": 380, "name": "Generator"}, {"xp": 620, "name": "Kraftwerk"}, {"xp": 920, "name": "Energieprofi"}], "page": "9_4_Energie_und_Leistung_erfassen.html"}, "nt9-5": {"id": "nt9-5", "storeKey": "halingen-nt9-5-v1", "title": "Genetik und Gentechnik verstehen", "lead": "Zelle, DNA, Gene und ethische Fragen", "stations": [{"id": "g1", "nr": 1, "title": "Zelle, Chromosom und Gen", "sub": "Wo die Erbinformationen liegen"}, {"id": "g2", "nr": 2, "title": "Zellteilung", "sub": "Mitose und Differenzierung"}, {"id": "g3", "nr": 3, "title": "Die DNA", "sub": "Bausteine, Doppelhelix und Verdopplung"}, {"id": "g4", "nr": 4, "title": "Veränderung der Erbinformation", "sub": "Mutation und Fortpflanzung"}, {"id": "g5", "nr": 5, "title": "Vom Gen zum Merkmal", "sub": "Proteine und genetischer Code"}, {"id": "g6", "nr": 6, "title": "Gentechnik und Ethik", "sub": "Möglichkeiten, Chancen und Fragen"}], "levels": [{"xp": 0, "name": "Zelle"}, {"xp": 80, "name": "Zellkern"}, {"xp": 200, "name": "Chromosom"}, {"xp": 380, "name": "Gen"}, {"xp": 620, "name": "Genetik-Profi"}, {"xp": 920, "name": "Doppelhelix"}], "page": "9_5_Genetik_und_Gentechnik_verstehen.html"}, "nt9-6": {"id": "nt9-6", "storeKey": "halingen-nt9-6-v1", "title": "Evolution nachvollziehen", "lead": "Erdgeschichte, Stammbäume und Selektion", "stations": [{"id": "v1", "nr": 1, "title": "Entstehung der Lebewesen", "sub": "Eine Reise durch die Erdgeschichte"}, {"id": "v2", "nr": 2, "title": "Lebewesen ordnen", "sub": "Homologie, Analogie und Kladogramm"}, {"id": "v3", "nr": 3, "title": "Evolutionstheorien", "sub": "Lamarck und Darwin/Wallace"}, {"id": "v4", "nr": 4, "title": "Variabilität und Selektion", "sub": "Die Evolutionsfaktoren"}, {"id": "v5", "nr": 5, "title": "Artbildung", "sub": "Sexuelle Selektion, Isolation, Spezialisierung"}, {"id": "v6", "nr": 6, "title": "Evolution anwenden", "sub": "Beispiele erklären"}], "levels": [{"xp": 0, "name": "Urbakterium"}, {"xp": 80, "name": "Landpflanze"}, {"xp": 200, "name": "Wirbeltier"}, {"xp": 380, "name": "Säugetier"}, {"xp": 620, "name": "Darwinfink"}, {"xp": 920, "name": "Evolutionsprofi"}], "page": "9_6_Evolution_nachvollziehen.html"}, "nt9-7": {"id": "nt9-7", "storeKey": "halingen-nt9-7-v1", "title": "Land-Ökosysteme erforschen", "lead": "Boden, Biodiversität und Naturschutz", "stations": [{"id": "l1", "nr": 1, "title": "Wiese, Wald und Zeigerpflanzen", "sub": "Standorte lesen lernen"}, {"id": "l2", "nr": 2, "title": "Boden: Bestandteile und Funktionen", "sub": "Mehr als nur Dreck"}, {"id": "l3", "nr": 3, "title": "Boden untersuchen", "sub": "Wasser, Humus und pH-Wert"}, {"id": "l4", "nr": 4, "title": "Dörfer und Städte als Ökosysteme", "sub": "Artenvielfalt und Versiegelung"}, {"id": "l5", "nr": 5, "title": "Biodiversität in Gefahr", "sub": "Ursachen des Artenrückgangs"}, {"id": "l6", "nr": 6, "title": "Naturnutzung und Naturschutz", "sub": "Reuss-Mündung und Permakultur"}], "levels": [{"xp": 0, "name": "Samenkorn"}, {"xp": 80, "name": "Wiese"}, {"xp": 200, "name": "Waldrand"}, {"xp": 380, "name": "Humusboden"}, {"xp": 620, "name": "Mischwald"}, {"xp": 920, "name": "Naturhüter"}], "page": "9_7_Land_Oekosysteme_erforschen.html"}, "nt9-8": {"id": "nt9-8", "storeKey": "halingen-nt9-8-v1", "title": "Stoffkreisläufe erkunden", "lead": "Kohlenstoff, Klima, Kunststoffe und Rohstoffe", "stations": [{"id": "s1", "nr": 1, "title": "Kreisläufe in der Natur", "sub": "Begrenzte Stoffe, Kreisläufe, Sackgassen"}, {"id": "s2", "nr": 2, "title": "Der Kohlenstoff-Kreislauf", "sub": "Speicher, Flüsse und Gleichgewicht"}, {"id": "s3", "nr": 3, "title": "Treibhauseffekt und Klima", "sub": "Erkenntnisse und Fehlinformationen"}, {"id": "s4", "nr": 4, "title": "Kunststoffe", "sub": "Woher und wohin?"}, {"id": "s5", "nr": 5, "title": "Metall-Rohstoffe", "sub": "Uran, Kobalt und Tantal"}, {"id": "s6", "nr": 6, "title": "Baumwolle und die Folgen", "sub": "Lebenslauf eines Rohstoffs"}], "levels": [{"xp": 0, "name": "Rohstoff"}, {"xp": 80, "name": "Kreislauf"}, {"xp": 200, "name": "Wertstoff"}, {"xp": 380, "name": "Recyclinganlage"}, {"xp": 620, "name": "Klimaprofi"}, {"xp": 920, "name": "Kreislaufmeister"}], "page": "9_8_Stoffkreislaeufe_erkunden.html"}};   // Kapitel-Apps mit Stationen (aus den Inhaltsdateien)
+// Kapitel, für die es noch keine Lern-App gibt
+const PLAN = [
+  ['7_2', 'Den Körper analysieren'], ['7_6', 'Arbeiten im Labor'], ['8_2', 'Gewässer und Ökosysteme'], ['8_3', 'Funktionen des Körpers'],
+  ['8_4', 'Chemische Reaktionen'], ['9_1', 'Optische Phänomene'], ['9_2', 'Atommodelle'], ['9_3', 'Elektronische Schaltungen'], ['9_4', 'Energie und Leistung'],
+  ['9_5', 'Genetik und Gentechnik'], ['9_6', 'Evolution'], ['9_7', 'Land-Ökosysteme'], ['9_8', 'Stoffkreisläufe']
+];
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const $id = id => document.getElementById(id);
+const fmtN = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2019');
+const GROUPS = { '7': 'Kapitel 7', '8': 'Kapitel 8', '9': 'Kapitel 9', 'x': 'Vertiefungen' };
+const BCOL = { '7': 'var(--st-1)', '8': 'var(--st-3)', '9': 'var(--st-5)', 'x': 'var(--pop-pink)' };
+
+function readState(m) {
+  let s = null;
+  try { const r = localStorage.getItem(m.storeKey); if (r) s = JSON.parse(r); } catch (e) { /* ohne Speicher */ }
+  s = s || {};
+  const stars = s.stars || {}, lessons = s.lessons || {};
+  const xp = s.xp || 0;
+  let lv = 0; m.levels.forEach((l, i) => { if (xp >= l.xp) lv = i; });
+  return {
+    xp, lv, lvName: m.levels[lv].name, rounds: s.rounds || 0,
+    passed: m.stations.filter(st => (stars[st.id] || 0) >= 1).length,
+    starSum: m.stations.reduce((a, st) => a + (stars[st.id] || 0), 0),
+    stars, lessons, trophies: Object.keys(s.trophies || {}).length
+  };
+}
+// Kapitel zusammenstellen
+const chapters = Object.keys(META).map(k => {
+  const m = META[k], mt = /^(\d)_(\d)/.exec(m.page);
+  return Object.assign({ code: mt ? mt[1] + '_' + mt[2] : '', grp: mt ? mt[1] : 'x', st: readState(m) }, m);
+});
+const built = new Set(chapters.map(c => c.code));
+const planned = PLAN.filter(p => !built.has(p[0])).map(p => ({ code: p[0], grp: p[0][0], title: p[1], plan: true }));
+const all = chapters.concat(planned).sort((a, b) => (a.code || 'z').localeCompare(b.code || 'z', undefined, { numeric: true }));
+
+// Gesamtwerte
+const tot = chapters.reduce((a, c) => ({ xp: a.xp + c.st.xp, passed: a.passed + c.st.passed, stars: a.stars + c.st.starSum, stationsAll: a.stationsAll + c.stations.length, tr: a.tr + c.st.trophies, started: a.started + (c.st.rounds > 0 ? 1 : 0), done: a.done + (c.st.passed === c.stations.length ? 1 : 0) }), { xp: 0, passed: 0, stars: 0, stationsAll: 0, tr: 0, started: 0, done: 0 });
+const TROPHIES = [
+  { icon: '\u{1F680}', name: 'Aufbruch', how: 'Spiele in einem Kapitel deine erste Runde.', ok: () => tot.started >= 1 },
+  { icon: '\u{1F9ED}', name: 'Entdecker', how: 'Starte drei verschiedene Kapitel.', ok: () => tot.started >= 3 },
+  { icon: '\u{1F30D}', name: 'Weltenbummler', how: 'Starte alle Kapitel, die es schon gibt.', ok: () => tot.started >= chapters.length },
+  { icon: '\u{1F3C5}', name: 'Kapitel geschafft', how: 'Bestehe in einem Kapitel jede Station mit mindestens einem Stern.', ok: () => tot.done >= 1 },
+  { icon: '\u{1F31F}', name: 'Sternesammler', how: 'Sammle insgesamt 30 Sterne.', ok: () => tot.stars >= 30 },
+  { icon: '\u{1F4AF}', name: 'Tausender', how: 'Erreiche 1000 Punkte über alle Kapitel.', ok: () => tot.xp >= 1000 },
+  { icon: '\u{1F451}', name: 'Grosse Meisterschaft', how: 'Erreiche 5000 Punkte über alle Kapitel.', ok: () => tot.xp >= 5000 },
+  { icon: '\u{1F3C6}', name: 'Pokalschrank', how: 'Schalte 30 Trophäen in den Kapiteln frei.', ok: () => tot.tr >= 30 }
+];
+
+function watti(lvl) {
+  return `<div class="watti big" data-mood="happy" style="--lvl:${Math.max(14, Math.min(100, Math.round(lvl)))}%" aria-hidden="true"><div class="cap"></div><div class="body"><div class="fill"></div><div class="eyes"><i></i><i></i></div><div class="mouth"></div></div></div>`;
+}
+function chapterCard(c, i) {
+  if (c.plan) return `<article class="card planc" style="--sc:${BCOL[c.grp] || BCOL.x};--i:${i}"><span class="tag">${c.code}</span><h3>${esc(c.title)}</h3><p class="small">In Planung. Die Lern-App folgt.</p></article>`;
+  const st = c.st, pct = Math.round(st.passed / c.stations.length * 100);
+  const segs = c.stations.map(s => `<i class="${(st.stars[s.id] || 0) >= 1 ? 'g' : ''}"></i>`).join('');
+  const list = c.stations.map(s => {
+    const n = st.stars[s.id] || 0, ls = st.lessons[s.id];
+    return `<li><a class="stlink" href="${c.page}#learn-${s.id}"><span class="stn mono">${s.nr}</span><span class="stt"><b>${esc(s.title)}</b><small>${esc(s.sub)}</small></span><span class="mono sts" aria-label="${n} von 3 Sternen">${'\u2605'.repeat(n)}${'\u2606'.repeat(3 - n)}${ls ? ' \u2713' : ''}</span></a></li>`;
+  }).join('');
+  return `<details class="card bk" style="--sc:${BCOL[c.grp] || BCOL.x};--i:${i}">
+    <summary><span class="bnum" aria-hidden="true">${c.code ? c.code.replace('_', '.') : '\u2605'}</span><span class="btxt"><span class="tag">${c.code || 'Vertiefung'} \u00B7 ${st.lvName}</span><span class="btitle">${esc(c.title)}</span><span class="bsegs" aria-hidden="true">${segs}</span></span><span class="bcnt mono">${st.passed}/${c.stations.length}</span></summary>
+    <p class="small">${esc(c.lead)}</p>
+    <p class="small"><b class="mono">${fmtN(st.xp)} XP</b> \u00B7 ${st.trophies} Trophäen \u00B7 ${pct} % der Stationen bestanden</p>
+    <ul class="stlist">${list}</ul>
+    <a class="btn btn-primary block" href="${c.page}">${st.rounds ? 'Weiterlernen' : 'Kapitel öffnen'}</a>
+  </details>`;
+}
+function build() {
+  const sparks = [['8%', '30%', '16px', 'var(--pop-pink)', '8s'], ['70%', '12%', '10px', 'var(--pop-yellow)', '10s'], ['90%', '60%', '18px', 'var(--pop-cyan)', '9s'], ['40%', '78%', '12px', 'var(--pop-green)', '11s']]
+    .map(p => `<span class="spark" aria-hidden="true" style="--x:${p[0]};--y:${p[1]};--s:${p[2]};--c:${p[3]};--t:${p[4]}"></span>`).join('');
+  const groups = ['7', '8', '9', 'x'].map(g => {
+    const items = all.filter(c => c.grp === g);
+    if (!items.length) return '';
+    return `<h2 class="grp">${GROUPS[g]}</h2><div class="path">${items.map((c, i) => chapterCard(c, i)).join('')}</div>`;
+  }).join('');
+  const got = TROPHIES.filter(t => t.ok()).length;
+  const trs = TROPHIES.map(t => { const ok = t.ok(); return `<div class="trophy ${ok ? 'got' : 'locked'}"><span class="ticon" aria-hidden="true">${ok ? t.icon : '\u{1F512}'}</span><b>${t.name}</b><small>${t.how}</small>${ok ? '<span class="tdone">freigeschaltet</span>' : ''}</div>`; }).join('');
+  const pctAll = tot.stationsAll ? tot.passed / tot.stationsAll * 100 : 0;
+  $id('app').innerHTML = `<div class="view enter">
+  <header class="top">${sparks}
+    <div class="topbar"><div class="logochip"><img src="logo.png" alt="Sekundarschule Halingen"></div><span class="tag inv">Natur und Technik</span></div>
+    <div class="hero"><div class="herotxt"><h1>Lern-App</h1><p class="lead">Alle Kapitel an einem Ort. Wähle ein Kapitel und lerne Station für Station.</p></div><div class="wbtn">${watti(pctAll)}</div></div>
+    <div class="stats">
+      <div class="stat"><span class="k">Punkte</span><span class="v mono">${fmtN(tot.xp)}</span><span class="mono s">alle Kapitel</span></div>
+      <div class="stat"><span class="k">Stationen</span><span class="v mono">${tot.passed}/${tot.stationsAll}</span><span class="mono s">bestanden</span></div>
+      <div class="stat"><span class="k">Trophäen</span><span class="v mono">${tot.tr + got}</span><span class="mono s">gesammelt</span></div>
+    </div>
+    <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pctAll)}" aria-label="Bestandene Stationen"><div style="width:${pctAll}%"></div></div>
+  </header>
+  <main class="wrap hubmain">
+    <p class="small">Jedes Kapitel hat sechs Stationen. Tippe auf ein Kapitel, um die Stationen zu sehen. Mit einer Station startest du direkt in der Lektion. Dein Fortschritt bleibt nur auf diesem Gerät.</p>
+    ${groups}
+    <h2 class="grp">Gesamt-Trophäen</h2>
+    <p class="small">${got} von ${TROPHIES.length} freigeschaltet. Sie zählen über alle Kapitel.</p>
+    <div class="tgrid">${trs}</div>
+    <footer class="foot"><p class="small"><a href="nut.html">Lernlandkarte NuT</a> \u00B7 Zuordnung der Lern-Apps zum Lehrplan</p></footer>
+  </main></div>`;
+}
+build();
+if (typeof globalThis !== 'undefined') globalThis.__portal = { chapters, planned, tot, TROPHIES };
+})();
+
+</script>
+</body>
+</html>
