@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Leistung – Lern-App</title>
+<title>NuT Lernlandkarte</title>
 <style>
 @font-face { font-family: 'Fredoka'; src: url('fonts/fredoka.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
 @font-face { font-family: 'Nunito'; src: url('fonts/nunito.woff2') format('woff2'); font-weight: 200 1000; font-display: swap; }
@@ -579,9 +579,9 @@ h1, h2, h3, .top h1, .row h2, .sumh, .lh, .st h3, .review h3, .clsc h3, .chal h3
 .amp.r .dotc { background: var(--pop-pink); } .amp.y .dotc { background: var(--pop-yellow); } .amp.g .dotc { background: var(--pop-green); }
 .amp[aria-pressed="true"] { border-color: var(--line); box-shadow: 0 3px 0 var(--line); font-weight: 900; }
 .amp.r[aria-pressed="true"] { background: var(--bad-bg); } .amp.y[aria-pressed="true"] { background: var(--warn-bg); } .amp.g[aria-pressed="true"] { background: var(--good-bg); }
-.lp { margin-top: var(--space-2); }
-.lp summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
-.lp p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+.lptext { margin-top: var(--space-2); }
+.lptext summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
+.lptext p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
 .chips .btn.on { background: var(--primary); color: var(--on-primary); }
 @media (max-width: 380px) { .amp { font-size: var(--text-xs); } .dotc { display: none; } }
 
@@ -788,1024 +788,19 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 .base { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--line); border-radius: 8px; font-weight: 800; background: var(--surface); }
 .base.bA { background: var(--pop-yellow); } .base.bT { background: var(--pop-cyan); } .base.bG { background: var(--pop-pink); } .base.bC { background: var(--pop-green); }
 .base.leer { opacity: .55; }
+
+/* Lernlandkarte: QR-Code */
+.qfields { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
+.qin { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
 </style>
 </head>
 <body>
 <div id="app"><noscript><main class="wrap"><p>Diese Lern-App braucht JavaScript.</p></main></noscript></div>
 <script src="config.js"></script>
-<script src="vendor/supabase.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script>
 (function () {
 'use strict';
-
-/* ---------- Hilfsfunktionen ---------- */
-const G = 10; // Ortsfaktor in N/kg (Annahme: Sek-Standard)
-let RNG = Math.random; // wird für die Challenge kurz durch einen Seed-Generator ersetzt
-const rnd = a => a[Math.floor(RNG() * a.length)];
-function seeded(str) {
-  let h = 1779033703 ^ str.length;
-  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
-  let a = (() => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return (h ^= h >>> 16) >>> 0; })();
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const NICK_A = ['Blitz', 'Funke', 'Turbo', 'Watt', 'Joule', 'Volt', 'Ampere', 'Kilo', 'Dynamo', 'Magnet'];
-const NICK_B = ['Fuchs', 'Adler', 'Luchs', 'Falke', 'Dachs', 'Otter', 'Uhu', 'Igel'];
-const newNick = () => NICK_A[Math.floor(Math.random() * NICK_A.length)] + '-' + NICK_B[Math.floor(Math.random() * NICK_B.length)];
-const shuffle = a => {
-  a = a.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(RNG() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
-function fmt(n, d) {
-  d = d === undefined ? 3 : d;
-  const f = Math.pow(10, d);
-  n = Math.round(n * f) / f;
-  const neg = n < 0;
-  let [i, fr] = Math.abs(n).toString().split('.');
-  if (i.length > 4) i = i.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
-  return (neg ? '\u2212' : '') + i + (fr ? ',' + fr : '');
-}
-const num = (q, unit, ans, hint, explain, o) =>
-  Object.assign({ type: 'num', q, unit, ans, hint, explain, tolRel: 0.01, tolAbs: 0 }, o || {});
-// MC: options[0] ist die richtige Antwort, gemischt wird beim Anzeigen
-const mc = (q, options, explain) => ({ type: 'mc', q, options, explain });
-
-/* ---------- Inhalt: 6 Stationen mit je 6 Aufgabenvorlagen ---------- */
-const STATIONS = [
-  {
-    id: 's1', nr: 1, title: 'Arbeit und Lageenergie', sub: 'W = F \u00B7 s',
-    items: [
-      { id: 's1-gewicht', topic: 'Gewichtskraft berechnen', make() {
-        const m = rnd([2, 5, 8, 10, 20, 40, 60]); const F = m * G;
-        return num(`Ein Rucksack hat eine Masse von ${fmt(m)} kg. Wie gross ist seine Gewichtskraft? Rechne mit g = 10 N/kg.`, 'N', F,
-          'Gewichtskraft = Masse \u00B7 Ortsfaktor, also F = m \u00B7 g.',
-          `F = m \u00B7 g = ${fmt(m)} kg \u00B7 10 N/kg = ${fmt(F)} N`);
-      } },
-      { id: 's1-hub', topic: 'Hubarbeit berechnen', make() {
-        const m = rnd([2, 3, 4, 5, 8, 10]); const h = rnd([0.5, 1, 1.5, 2, 2.5, 3]); const W = m * G * h;
-        return num(`Du hebst eine Kiste mit ${fmt(m)} kg um ${fmt(h)} m hoch. Wie gross ist die Hubarbeit?`, 'J', W,
-          'Zuerst die Gewichtskraft berechnen (F = m \u00B7 g), dann Arbeit = Kraft \u00B7 Weg.',
-          `F = ${fmt(m)} kg \u00B7 10 N/kg = ${fmt(m * G)} N<br>W = F \u00B7 s = ${fmt(m * G)} N \u00B7 ${fmt(h)} m = ${fmt(W)} J`);
-      } },
-      { id: 's1-richtung', topic: 'Wann wird Arbeit verrichtet?', make() {
-        return mc('Du trägst einen schweren Koffer waagrecht durch den Gang. Verrichtest du dabei Hubarbeit?', [
-          'Nein: Die Kraft zeigt nach oben, der Weg aber waagrecht.',
-          'Ja: Der Koffer ist schwer, also verrichtest du immer Arbeit.',
-          'Ja, aber nur, wenn du dabei schwitzt.',
-          'Nein: Beim Tragen wird nie Arbeit verrichtet.'],
-          'Arbeit gibt es nur, wenn Kraft und Weg in dieselbe Richtung zeigen. Beim waagrechten Tragen zeigt die Haltekraft nach oben, der Weg geht aber zur Seite. Der Koffer gewinnt keine Höhe, also keine Hubarbeit.');
-      } },
-      { id: 's1-arbeit', topic: 'Arbeit = Kraft \u00B7 Weg', make() {
-        const F = rnd([50, 100, 200, 250, 400]); const s = rnd([2, 4, 5, 10, 15]); const W = F * s;
-        return num(`Du schiebst einen Wagen mit einer gleichbleibenden Kraft von ${fmt(F)} N über ${fmt(s)} m. Welche Arbeit verrichtest du?`, 'J', W,
-          'Arbeit = Kraft \u00B7 Weg.',
-          `W = F \u00B7 s = ${fmt(F)} N \u00B7 ${fmt(s)} m = ${fmt(W)} J`);
-      } },
-      { id: 's1-goldene', topic: 'Goldene Regel der Mechanik', make() {
-        return mc('Auf einer schiefen Ebene brauchst du nur die halbe Kraft, um eine Last hochzuschieben. Was gilt für den Weg?', [
-          'Der Weg wird doppelt so lang, die Arbeit bleibt gleich.',
-          'Der Weg bleibt gleich, die Arbeit wird halbiert.',
-          'Der Weg wird halb so lang, die Arbeit bleibt gleich.',
-          'Der Weg wird doppelt so lang, die Arbeit wird doppelt so gross.'],
-          'Goldene Regel der Mechanik: Was du an Kraft sparst, musst du an Weg zugeben. Die Arbeit W = F \u00B7 s bleibt gleich (ohne Reibung).');
-      } },
-      { id: 's1-schiefe', topic: 'Kraft auf der schiefen Ebene', ext: true, make() {
-        const m = rnd([20, 40, 60]); const h = rnd([1, 2, 3]); const k = rnd([2, 4, 5]); const s = h * k; const F = m * G / k;
-        return num(`Eine Last mit ${fmt(m)} kg soll ${fmt(h)} m hoch gehoben werden. Du schiebst sie stattdessen eine reibungsfreie schiefe Ebene mit ${fmt(s)} m Länge hinauf. Welche Kraft brauchst du?`, 'N', F,
-          'Die Arbeit ist gleich wie beim direkten Heben: W = m \u00B7 g \u00B7 h = F \u00B7 s. Löse nach F auf.',
-          `W = m \u00B7 g \u00B7 h = ${fmt(m)} kg \u00B7 10 N/kg \u00B7 ${fmt(h)} m = ${fmt(m * G * h)} J<br>F = W : s = ${fmt(m * G * h)} J : ${fmt(s)} m = ${fmt(F)} N`);
-      } }
-    ]
-  },
-  {
-    id: 's2', nr: 2, title: 'Leistung: Arbeit pro Zeit', sub: 'P = W : t',
-    items: [
-      { id: 's2-def', topic: 'Was ist Leistung?', make() {
-        return mc('Was beschreibt die Leistung in der Physik?', [
-          'Wie viel Energie pro Zeit umgewandelt wird.',
-          'Wie viel Energie insgesamt umgewandelt wird.',
-          'Wie gross die Kraft ist, die auf einen Körper wirkt.',
-          'Welchen Weg ein Körper pro Zeit zurücklegt.'],
-          'Leistung ist „Energie pro Zeit“ (oder Arbeit pro Zeit): P = W : t. Sie sagt, wie schnell Energie umgewandelt wird, nicht wie viel insgesamt.');
-      } },
-      { id: 's2-p', topic: 'Leistung berechnen', make() {
-        const P = rnd([50, 100, 150, 200, 300, 500]); const t = rnd([2, 3, 4, 5, 6, 8, 10]); const W = P * t;
-        return num(`Ein Motor verrichtet in ${fmt(t)} s eine Arbeit von ${fmt(W)} J. Welche Leistung hat er?`, 'W', P,
-          'Leistung = Arbeit : Zeit.',
-          `P = W : t = ${fmt(W)} J : ${fmt(t)} s = ${fmt(P)} W`);
-      } },
-      { id: 's2-treppe', topic: 'Leistung beim Treppensteigen', make() {
-        let h, t, P;
-        do { h = rnd([3, 4, 5, 6]); t = rnd([6, 8, 9, 10, 12, 15, 18, 20, 24, 30]); P = 600 * h / t; } while (!Number.isInteger(P) || P > 400 || P < 80);
-        return num(`Eine Person mit 60 kg steigt in ${fmt(t)} s eine Treppe mit ${fmt(h)} m Höhenunterschied hoch. Welche Leistung bringt sie auf? Rechne mit g = 10 N/kg.`, 'W', P,
-          'Zwei Schritte: erst die Hubarbeit W = m \u00B7 g \u00B7 h, dann P = W : t.',
-          `W = 60 kg \u00B7 10 N/kg \u00B7 ${fmt(h)} m = ${fmt(600 * h)} J<br>P = W : t = ${fmt(600 * h)} J : ${fmt(t)} s = ${fmt(P)} W`);
-      } },
-      { id: 's2-zeit', topic: 'Zeit aus Leistung und Arbeit', make() {
-        const P = rnd([100, 200, 500, 1000, 2000]); const t = rnd([3, 4, 5, 6, 8, 10, 12]); const W = P * t;
-        return num(`Ein Motor mit ${fmt(P)} W soll eine Arbeit von ${fmt(W)} J verrichten. Wie lange braucht er dafür?`, 's', t,
-          'Stelle P = W : t nach t um: t = W : P.',
-          `t = W : P = ${fmt(W)} J : ${fmt(P)} W = ${fmt(t)} s`);
-      } },
-      { id: 's2-vergleich', topic: 'Arbeit und Leistung unterscheiden', make() {
-        return mc('Anna und Ben haben die gleiche Masse und steigen dieselbe Treppe hoch. Anna braucht 10 s, Ben 20 s. Welche Aussage stimmt?', [
-          'Beide verrichten gleich viel Arbeit, Anna hat die doppelte Leistung.',
-          'Anna verrichtet doppelt so viel Arbeit und hat die doppelte Leistung.',
-          'Beide haben die gleiche Leistung, weil sie dieselbe Treppe steigen.',
-          'Ben hat die grössere Leistung, weil er länger arbeitet.'],
-          'Gleiche Masse und gleiche Höhe bedeuten gleiche Hubarbeit. Anna schafft sie in der halben Zeit, also hat sie die doppelte Leistung (P = W : t).');
-      } },
-      { id: 's2-arbeit', topic: 'Arbeit aus Leistung und Zeit', make() {
-        const P = rnd([500, 1000, 2000, 2500]); const t = rnd([5, 10, 15, 20, 30]); const W = P * t;
-        return num(`Ein Kran leistet ${fmt(P)} W und arbeitet ${fmt(t)} s lang. Welche Arbeit verrichtet er?`, 'J', W,
-          'Stelle P = W : t nach W um: W = P \u00B7 t.',
-          `W = P \u00B7 t = ${fmt(P)} W \u00B7 ${fmt(t)} s = ${fmt(W)} J`);
-      } }
-    ]
-  },
-  {
-    id: 's3', nr: 3, title: 'Einheiten: W, kW und PS', sub: '1 W = 1 J/s',
-    items: [
-      { id: 's3-kw-w', topic: 'kW in W umrechnen', make() {
-        const k = rnd([0.5, 1.5, 2, 2.5, 3, 7.5]); const W = k * 1000;
-        return num(`Ein Heizlüfter hat eine Leistung von ${fmt(k)} kW. Wie viel Watt sind das?`, 'W', W,
-          '1 kW = 1000 W.',
-          `${fmt(k)} kW \u00B7 1000 = ${fmt(W)} W`);
-      } },
-      { id: 's3-w-kw', topic: 'W in kW umrechnen', make() {
-        const W = rnd([500, 1500, 2200, 4500, 8000]); const k = W / 1000;
-        return num(`Ein Backofen hat eine Leistung von ${fmt(W)} W. Wie viel Kilowatt sind das?`, 'kW', k,
-          '1 kW = 1000 W, also teilst du durch 1000.',
-          `${fmt(W)} W : 1000 = ${fmt(k)} kW`);
-      } },
-      { id: 's3-einheit', topic: 'Einheit Watt', make() {
-        return mc('Welche Aussage über die Einheit Watt stimmt?', [
-          '1 W = 1 J pro Sekunde',
-          '1 W = 1 J mal Sekunde',
-          '1 W = 1 N pro Meter',
-          '1 W = 1 kg pro Sekunde'],
-          'Leistung ist Energie pro Zeit: 1 Watt bedeutet, dass pro Sekunde 1 Joule umgewandelt wird (1 W = 1 J/s).');
-      } },
-      { id: 's3-ps', topic: 'PS in W umrechnen', make() {
-        const PS = rnd([1, 2, 4, 5, 10]); const W = PS * 735;
-        return num(`Ein Mofa hat eine Leistung von ${fmt(PS)} PS. Rechne in Watt um. Es gilt 1 PS \u2248 735 W.`, 'W', W,
-          'Multipliziere die PS-Zahl mit 735.',
-          `${fmt(PS)} PS \u00B7 735 W = ${fmt(W)} W`, { tolRel: 0.015 });
-      } },
-      { id: 's3-mensch', topic: 'Leistungen einordnen', make() {
-        return mc('Welche Leistung bringt ein Mensch beim zügigen Treppensteigen kurzzeitig ungefähr auf?', [
-          'etwa 200 W',
-          'etwa 2 W',
-          'etwa 20\u202F000 W',
-          'etwa 2\u202F000\u202F000 W'],
-          'Ein Mensch leistet kurzzeitig einige Hundert Watt (bei 60 kg, 3 m in 10 s sind es rund 180 W). 2 W wäre viel zu wenig (das schafft schon eine kleine Lampe), 20 000 W wäre rund hundertmal so viel.');
-      } },
-      { id: 's3-kw-ps', topic: 'kW in PS umrechnen', ext: true, make() {
-        const kW = rnd([30, 50, 75, 100, 150]); const PS = kW * 1000 / 735;
-        return num(`Ein Auto hat eine Motorleistung von ${fmt(kW)} kW. Wie viele PS sind das ungefähr? Es gilt 1 PS \u2248 735 W.`, 'PS', PS,
-          'Zuerst in Watt umrechnen (\u00B7 1000), dann durch 735 teilen.',
-          `${fmt(kW)} kW = ${fmt(kW * 1000)} W<br>${fmt(kW * 1000)} W : 735 W/PS \u2248 ${fmt(PS, 1)} PS`, { tolRel: 0.02 });
-      } }
-    ]
-  },
-  {
-    id: 's4', nr: 4, title: 'Elektrische Leistung', sub: 'P = U \u00B7 I',
-    items: [
-      { id: 's4-pui', topic: 'P = U \u00B7 I anwenden', make() {
-        const s = rnd([
-          ['Ein Lämpchen', 6, 0.5], ['Ein Motor', 12, 2], ['Ein Föhn', 230, 8],
-          ['Ein Staubsauger', 230, 5], ['Ein Mixer', 230, 2], ['Eine Taschenlampe', 6, 0.3]
-        ]);
-        const P = s[1] * s[2];
-        return num(`${s[0]} wird an ${fmt(s[1])} V betrieben. Es fliesst ein Strom von ${fmt(s[2])} A. Wie gross ist die elektrische Leistung?`, 'W', P,
-          'Elektrische Leistung = Spannung \u00B7 Stromstärke.',
-          `P = U \u00B7 I = ${fmt(s[1])} V \u00B7 ${fmt(s[2])} A = ${fmt(P)} W`);
-      } },
-      { id: 's4-strom', topic: 'Stromstärke aus Typenschild', make() {
-        const I = rnd([1, 2, 4, 5, 8, 10]); const P = 230 * I;
-        return num(`Auf dem Typenschild eines Geräts steht: 230 V, ${fmt(P)} W. Welche Stromstärke fliesst beim Betrieb?`, 'A', I,
-          'Stelle P = U \u00B7 I nach I um: I = P : U.',
-          `I = P : U = ${fmt(P)} W : 230 V = ${fmt(I)} A`);
-      } },
-      { id: 's4-typenschild', topic: 'Typenschild lesen', make() {
-        return mc('Auf einem Wasserkocher steht „230 V, 2000 W“. Was bedeuten die 2000 W?', [
-          'Der Wasserkocher wandelt pro Sekunde 2000 J elektrische Energie um.',
-          'Der Wasserkocher kann insgesamt 2000 J Energie speichern.',
-          'Der Wasserkocher braucht 2000 s, bis das Wasser kocht.',
-          'Am Wasserkocher liegt eine Spannung von 2000 V an.'],
-          '2000 W = 2000 J/s: Das ist die Leistung, also die Energie, die pro Sekunde umgewandelt wird. Die Spannung steht in V (hier 230 V).');
-      } },
-      { id: 's4-verdoppeln', topic: 'Spannung, Strom und Leistung', make() {
-        return mc('Die Spannung bleibt gleich, die Stromstärke wird verdoppelt. Was passiert mit der elektrischen Leistung?', [
-          'Sie wird doppelt so gross.',
-          'Sie bleibt gleich.',
-          'Sie wird halbiert.',
-          'Sie wird viermal so gross.'],
-          'P = U \u00B7 I: Wenn U gleich bleibt und I doppelt so gross wird, wird auch P doppelt so gross.');
-      } },
-      { id: 's4-spannung', topic: 'Spannung berechnen', ext: true, make() {
-        const U = rnd([6, 12, 24]); const I = rnd([0.5, 1, 2, 3]); const P = U * I;
-        return num(`Ein Gerät nimmt ${fmt(P)} W auf. Die Stromstärke beträgt ${fmt(I)} A. Welche Spannung liegt an?`, 'V', U,
-          'Stelle P = U \u00B7 I nach U um: U = P : I.',
-          `U = P : I = ${fmt(P)} W : ${fmt(I)} A = ${fmt(U)} V`);
-      } },
-      { id: 's4-sicherheit', topic: 'Sicherheit beim Experimentieren', make() {
-        return mc('Warum arbeiten wir bei Schülerversuchen mit Netzgeräten bis höchstens 12 V und nicht direkt mit der Steckdose?', [
-          'Steckdosenspannung (230 V) kann lebensgefährlich sein, Kleinspannung nicht.',
-          'Weil die Lämpchen bei 230 V sofort durchbrennen würden.',
-          'Weil man bei 230 V nichts messen kann.',
-          'Weil die Steckdose im Schulzimmer sowieso nicht funktioniert.'],
-          'Ströme aus der Steckdose (230 V) können tödlich sein. Im Unterricht verwenden wir deshalb Kleinspannung. 230-V-Geräte schliesst du nur über ein Energiekostenmessgerät und unter Aufsicht an.');
-      } }
-    ]
-  },
-  {
-    id: 's5', nr: 5, title: 'Energie und Kosten', sub: 'E = P \u00B7 t',
-    items: [
-      { id: 's5-kwh', topic: 'Energie in kWh berechnen', make() {
-        const P = rnd([100, 500, 1000, 1500, 2000, 3000]); const t = rnd([0.5, 1, 2, 4, 10]); const E = P / 1000 * t;
-        return num(`Ein Gerät mit ${fmt(P)} W läuft ${fmt(t)} h. Wie viel elektrische Energie wandelt es um?`, 'kWh', E,
-          'Rechne die Leistung zuerst in kW um, dann E = P \u00B7 t.',
-          `P = ${fmt(P)} W = ${fmt(P / 1000)} kW<br>E = P \u00B7 t = ${fmt(P / 1000)} kW \u00B7 ${fmt(t)} h = ${fmt(E)} kWh`);
-      } },
-      { id: 's5-kosten', topic: 'Stromkosten berechnen', make() {
-        const P = rnd([100, 200, 400, 500, 1000, 2000]); const t = rnd([1, 2, 3, 5, 10]); const pr = rnd([20, 25, 30]);
-        const E = P / 1000 * t; const K = E * pr;
-        return num(`Ein Gerät mit ${fmt(P)} W läuft ${fmt(t)} h. 1 kWh kostet ${fmt(pr)} Rappen. Wie viel kostet der Betrieb?`, 'Rappen', K,
-          'Erst die Energie in kWh berechnen (E = P \u00B7 t), dann mit dem Preis pro kWh multiplizieren.',
-          `E = ${fmt(P / 1000)} kW \u00B7 ${fmt(t)} h = ${fmt(E)} kWh<br>Kosten = ${fmt(E)} kWh \u00B7 ${fmt(pr)} Rp./kWh = ${fmt(K)} Rappen`,
-          { tolAbs: 0.5 });
-      } },
-      { id: 's5-einheit', topic: 'Einheit kWh', make() {
-        return mc('Die Einheit kWh (Kilowattstunde) ist eine Einheit für …', [
-          'Energie',
-          'Leistung',
-          'Spannung',
-          'Zeit'],
-          'kW ist die Leistung, h die Zeit. Leistung \u00B7 Zeit ergibt Energie: Die kWh ist eine Energieeinheit (1 kWh = 3,6 MJ).');
-      } },
-      { id: 's5-standby', topic: 'Standby-Kosten', ext: true, make() {
-        const P = rnd([2, 5, 10, 20]); const K = P * 8.76 * 0.25;
-        return num(`Ein Gerät verbraucht im Standby dauernd ${fmt(P)} W (365 Tage, 24 h pro Tag). 1 kWh kostet 25 Rappen. Wie viele Franken kostet das pro Jahr?`, 'Franken', K,
-          'Ein Jahr hat 365 \u00B7 24 = 8760 h. Erst die Energie in kWh, dann die Kosten.',
-          `E = ${fmt(P / 1000)} kW \u00B7 8760 h = ${fmt(P * 8.76)} kWh<br>Kosten = ${fmt(P * 8.76)} kWh \u00B7 0,25 Fr./kWh \u2248 ${fmt(K, 2)} Fr.`,
-          { tolRel: 0.03 });
-      } },
-      { id: 's5-fall', topic: 'Leistung und Energie unterscheiden', make() {
-        return mc('Ein Föhn (1800 W) läuft 5 Minuten. Ein Laptop (60 W) läuft 3 Stunden. Welches Gerät braucht mehr Energie?', [
-          'Der Laptop (rund 0,18 kWh gegenüber 0,15 kWh beim Föhn).',
-          'Der Föhn, weil er die grössere Leistung hat.',
-          'Beide brauchen gleich viel Energie.',
-          'Das lässt sich ohne die Strompreise nicht sagen.'],
-          'Föhn: 1,8 kW \u00B7 (5 : 60) h = 0,15 kWh. Laptop: 0,06 kW \u00B7 3 h = 0,18 kWh. Grosse Leistung heisst nicht automatisch viel Energie: Es kommt auf die Zeit an.');
-      } },
-      { id: 's5-zeit', topic: 'Laufzeit aus Energie und Leistung', make() {
-        const s = rnd([[2000, 1, 30], [1000, 1, 60], [500, 0.5, 60], [4000, 1, 15], [2000, 0.5, 15], [500, 1, 120], [1000, 0.5, 30]]);
-        return num(`Ein Heizlüfter hat ${fmt(s[0])} W. Wie viele Minuten darf er laufen, bis er ${fmt(s[1])} kWh Energie verbraucht hat?`, 'min', s[2],
-          'Stelle E = P \u00B7 t nach t um (P in kW), das Ergebnis ist in Stunden. Dann mal 60.',
-          `t = E : P = ${fmt(s[1])} kWh : ${fmt(s[0] / 1000)} kW = ${fmt(s[1] / (s[0] / 1000))} h = ${fmt(s[2])} min`);
-      } }
-    ]
-  },
-  {
-    id: 's6', nr: 6, title: 'Wirkungsgrad', sub: '\u03B7 = E_nutz : E_zu',
-    items: [
-      { id: 's6-def', topic: 'Wirkungsgrad definieren', make() {
-        return mc('Wie berechnest du den Wirkungsgrad \u03B7 eines Geräts?', [
-          '\u03B7 = Nutzenergie : zugeführte Energie',
-          '\u03B7 = zugeführte Energie : Nutzenergie',
-          '\u03B7 = Nutzenergie \u00B7 Zeit',
-          '\u03B7 = Leistung : Zeit'],
-          'Der Wirkungsgrad sagt, welcher Anteil der zugeführten Energie nutzbar ist: \u03B7 = E_nutz : E_zu. Meist gibst du ihn in Prozent an.');
-      } },
-      { id: 's6-eta', topic: 'Wirkungsgrad berechnen', make() {
-        const zu = rnd([100, 200, 500, 1000]); const eta = rnd([5, 10, 25, 40, 60, 80, 90]); const nu = zu * eta / 100;
-        return num(`Einem Gerät werden ${fmt(zu)} J elektrische Energie zugeführt. Es gibt ${fmt(nu)} J als Nutzenergie ab. Wie gross ist der Wirkungsgrad?`, '%', eta,
-          '\u03B7 = Nutzenergie : zugeführte Energie, dann mal 100 für Prozent.',
-          `\u03B7 = ${fmt(nu)} J : ${fmt(zu)} J = ${fmt(eta / 100)} = ${fmt(eta)} %`);
-      } },
-      { id: 's6-nutz', topic: 'Nutzenergie berechnen', make() {
-        const eta = rnd([20, 50, 60, 80, 90]); const zu = rnd([200, 500, 1000, 2500]); const nu = zu * eta / 100;
-        return num(`Ein Elektromotor hat einen Wirkungsgrad von ${fmt(eta)} %. Ihm werden ${fmt(zu)} J elektrische Energie zugeführt. Wie viel Nutzenergie gibt er ab?`, 'J', nu,
-          'Nutzenergie = Wirkungsgrad \u00B7 zugeführte Energie (Prozent als Anteil rechnen).',
-          `E_nutz = \u03B7 \u00B7 E_zu = ${fmt(eta / 100)} \u00B7 ${fmt(zu)} J = ${fmt(nu)} J`);
-      } },
-      { id: 's6-ueber100', topic: 'Grenzen des Wirkungsgrads', make() {
-        return mc('Ein Erfinder behauptet, sein Gerät habe einen Wirkungsgrad von 120 %. Was sagst du dazu?', [
-          'Unmöglich: Das Gerät würde mehr Energie abgeben, als es bekommt. Das widerspricht der Energieerhaltung.',
-          'Möglich, wenn das Gerät sehr gut gebaut ist.',
-          'Möglich, aber nur bei Elektrogeräten.',
-          'Möglich, wenn man die Reibung ganz weglässt.'],
-          'Energie kann nicht entstehen. Ein Wirkungsgrad über 100 % würde mehr Nutzenergie bedeuten, als zugeführt wurde. Auch ohne Reibung ist 100 % die Obergrenze. Wärmepumpen wirken nur so, als ob sie mehr schaffen, weil sie zusätzlich Wärme aus der Umgebung nutzen. Rechnest du die mit, bleibt es bei höchstens 100 %.');
-      } },
-      { id: 's6-verlust', topic: 'Energieentwertung', make() {
-        return mc('Eine Glühlampe wandelt nur wenige Prozent der elektrischen Energie in Licht um. Was passiert mit dem Rest?', [
-          'Er wird zu Wärme (thermischer Energie) und ist nicht mehr nutzbar.',
-          'Er geht verloren und verschwindet.',
-          'Er wird in der Lampe als Lichtenergie gespeichert.',
-          'Er wird zu zusätzlicher Spannung.'],
-          'Energie geht nie verloren (Energieerhaltung). Der nicht genutzte Teil wird bei der Glühlampe zu Wärme und verteilt sich in der Umgebung. Das nennt man Energieentwertung.');
-      } },
-      { id: 's6-kocher', topic: 'Wirkungsgrad Wasserkocher', ext: true, make() {
-        const t = rnd([30, 60, 90]); const eta = rnd([75, 80, 85, 90]); const zu = 2 * t; const nu = zu * eta / 100;
-        return num(`Ein Wasserkocher mit 2000 W läuft ${fmt(t)} s. Das Wasser nimmt ${fmt(nu)} kJ Wärmeenergie auf. Wie gross ist der Wirkungsgrad?`, '%', eta,
-          'Zugeführte Energie: E = P \u00B7 t (in J, dann in kJ umrechnen). Dann \u03B7 = E_nutz : E_zu.',
-          `E_zu = 2000 W \u00B7 ${fmt(t)} s = ${fmt(zu * 1000)} J = ${fmt(zu)} kJ<br>\u03B7 = ${fmt(nu)} kJ : ${fmt(zu)} kJ = ${fmt(eta / 100)} = ${fmt(eta)} %`);
-      } }
-    ]
-  }
-];
-
-/* ---------- Lerninhalt: Lektionskarten pro Station ---------- */
-const merk = h => `<div class="merk"><span class="mk" aria-hidden="true">\u2605</span><div>${h}</div></div>`;
-const warnbox = h => `<div class="merk warn"><span class="mk" aria-hidden="true">!</span><div>${h}</div></div>`;
-const tri = (top, l, r) => `<div class="tri" role="img" aria-label="Formeldreieck: oben ${top}, unten ${l} und ${r}"><div class="tri-top mono">${top}</div><div class="tri-row"><div class="mono">${l}</div><div class="mono">${r}</div></div></div>`;
-
-const LESSONS = {
-  s1: [
-    { h: 'Arbeit: Kraft über einen Weg',
-      body: `<p>Du verrichtest <b>Arbeit</b>, wenn du mit einer Kraft einen Körper über eine Strecke bewegst, und zwar in Richtung der Kraft.</p>
-        ${merk('<b>W = F \u00B7 s</b><br>Arbeit = Kraft \u00B7 Weg<br>Einheit: Joule (J), 1 J = 1 N \u00B7 1 m')}
-        <p>Ein Beispiel: Eine Tafel Schokolade (100 g) wiegt etwa 1 N. Hebst du sie 1 m hoch, verrichtest du ungefähr 1 J Arbeit.</p>
-        <p>Wichtig: Wer einen Koffer waagrecht trägt, verrichtet im physikalischen Sinn keine Hubarbeit. Die Kraft zeigt nach oben, der Weg geht aber zur Seite.</p>` },
-    { h: 'Hubarbeit und Lageenergie',
-      body: `<p>Beim Heben musst du die Gewichtskraft überwinden. Sie hängt von der Masse ab:</p>
-        ${merk('<b>F = m \u00B7 g</b> mit g = 10 N/kg<br>Ein Körper mit 1 kg hat also etwa 10 N Gewichtskraft.')}
-        <p>Für die Hubarbeit gilt damit:</p>
-        ${merk('<b>W = m \u00B7 g \u00B7 h</b>')}
-        <p>Diese Arbeit ist danach nicht weg: Sie steckt als <b>Lageenergie</b> im angehobenen Körper. Lässt du ihn fallen, wird daraus wieder Bewegungsenergie.</p>
-        <p><b>Beispiel:</b> 5 kg um 2 m heben.<br>F = 5 kg \u00B7 10 N/kg = 50 N<br>W = 50 N \u00B7 2 m = 100 J</p>` },
-    { h: 'Probiere es aus',
-      body: '<p>Verändere Masse und Höhe. Was passiert mit der Arbeit, wenn du die Masse verdoppelst? Und wenn du die Höhe verdoppelst?</p>', sim: 'hub' },
-    { h: 'Die Goldene Regel der Mechanik',
-      body: `<p>Eine schiefe Ebene macht das Heben leichter: Du brauchst weniger Kraft. Dafür wird der Weg länger.</p>
-        ${merk('<b>Was du an Kraft sparst, musst du an Weg zugeben.</b><br>Die Arbeit bleibt gleich (ohne Reibung).')}
-        <p>Hier wird eine Last von 40 kg um 2 m angehoben. Wähle die Länge der Strecke.</p>`, sim: 'ramp' },
-    { h: 'Kurz testen',
-      check: { q: 'Du schiebst eine Kiste eine 4 m lange schiefe Ebene hinauf, statt sie 1 m hoch zu heben. Was wird dadurch kleiner?',
-        options: ['Die nötige Kraft.', 'Die verrichtete Arbeit.', 'Der Weg.', 'Die Lageenergie am Ende.'],
-        explain: 'Die Kraft sinkt auf etwa einen Viertel, dafür wird der Weg viermal so lang. Arbeit und Lageenergie am Ende bleiben gleich.' } }
-  ],
-  s2: [
-    { h: 'Wer ist schneller oben?',
-      body: `<p>Anna und Ben steigen dieselbe Treppe hoch. Anna braucht 10 s, Ben 20 s. Beide haben gleich viel Arbeit verrichtet. Trotzdem war Anna leistungsstärker, weil sie dieselbe Arbeit in kürzerer Zeit geschafft hat.</p>
-        <p>Diesen Unterschied beschreibt die <b>Leistung</b>.</p>
-        ${merk('<b>P = W : t</b><br>Leistung = Arbeit : Zeit<br>Einheit: Watt (W), 1 W = 1 J/s')}
-        <p>Leistung heisst also: <b>Wie viel Energie wird pro Sekunde umgewandelt?</b> 100 W bedeutet, dass pro Sekunde 100 J umgewandelt werden.</p>` },
-    { h: 'Das Treppenrennen',
-      body: '<p>Beide haben 60 kg und steigen 3 m hoch. Stelle die Zeiten ein und drücke Start. Vergleiche Arbeit und Leistung.</p>', sim: 'runner' },
-    { h: 'Formeln umstellen',
-      body: `<p>Mit dem Formeldreieck findest du die richtige Formel. Decke die Grösse ab, die du suchst.</p>
-        ${tri('W', 'P', 't')}
-        <ul><li>Gesucht P: P = W : t</li><li>Gesucht W: W = P \u00B7 t</li><li>Gesucht t: t = W : P</li></ul>
-        <p><b>Beispiel Treppe:</b> 60 kg, 3 m hoch, in 10 s.<br>W = 60 kg \u00B7 10 N/kg \u00B7 3 m = 1800 J<br>P = 1800 J : 10 s = 180 W</p>` },
-    { h: 'Kurz testen',
-      check: { q: 'Ein Kran hebt eine Last in 5 s auf 10 m. Ein zweiter Kran hebt dieselbe Last in 10 s auf 10 m. Welche Aussage stimmt?',
-        options: ['Der erste Kran hat die doppelte Leistung.', 'Der zweite Kran verrichtet mehr Arbeit.', 'Beide haben dieselbe Leistung.', 'Der zweite Kran hat die doppelte Leistung.'],
-        explain: 'Gleiche Last und gleiche Höhe bedeuten gleiche Arbeit. Der erste Kran schafft sie in der halben Zeit, also hat er die doppelte Leistung.' } }
-  ],
-  s3: [
-    { h: 'Watt, Kilowatt, PS',
-      body: `<p>Watt ist eine kleine Einheit. Darum gibt es grössere:</p>
-        <ul><li>1 kW (Kilowatt) = 1000 W</li><li>1 MW (Megawatt) = 1\u202F000\u202F000 W</li><li>1 PS (Pferdestärke) \u2248 735 W</li></ul>
-        <p>PS findest du noch bei Autos und Mofas. Physikalisch richtig ist Watt oder Kilowatt.</p>
-        ${merk('kW \u2192 W: mal 1000<br>W \u2192 kW: durch 1000<br>PS \u2192 W: mal 735')}` },
-    { h: 'Leistungen einordnen',
-      body: '<p>Tippe auf einen Balken. Die Skala ist gestaucht: Schon ein kleines Stück mehr Balken bedeutet ein Vielfaches an Leistung. Die Werte sind Richtwerte.</p>', sim: 'scale' },
-    { h: 'Umrechnen',
-      body: '<p>Schiebe den Regler und sieh dir dieselbe Leistung in drei Einheiten an.</p>', sim: 'convert' },
-    { h: 'Kurz testen',
-      check: { q: 'Ein Heizlüfter hat 2,5 kW. Wie viel Watt sind das?',
-        options: ['2500 W', '250 W', '25 W', '25\u202F000 W'],
-        explain: '1 kW sind 1000 W, also 2,5 \u00B7 1000 = 2500 W.' } }
-  ],
-  s4: [
-    { h: 'Strom bringt Energie',
-      body: `<p>Im Stromkreis ist die <b>Spannung U</b> (in Volt) der Antrieb: Sie sagt, wie viel Energie jede Ladung mitbringt. Die <b>Stromstärke I</b> (in Ampere) sagt, wie viel Ladung pro Sekunde fliesst.</p>
-        <p>Je grösser beides, desto mehr Energie wird pro Sekunde umgewandelt:</p>
-        ${merk('<b>P = U \u00B7 I</b><br>Leistung = Spannung \u00B7 Stromstärke<br>1 W = 1 V \u00B7 1 A')}
-        <p>Der Vergleich mit einem Wasserrad hilft: Fallhöhe (\u2248 Spannung) mal Wassermenge pro Sekunde (\u2248 Stromstärke) ergibt die Leistung.</p>` },
-    { h: 'Die Leistungs-Fläche',
-      body: '<p>Das Rechteck zeigt U (Breite) und I (Höhe). Seine Fläche ist die Leistung P. Verändere beide Werte und beobachte die Lampe.</p>', sim: 'pui' },
-    { h: 'Typenschild lesen',
-      body: `<div class="plate mono"><div>Wasserkocher</div><div>230 V</div><div>2000 W</div></div>
-        <p>Auf dem Typenschild stehen Spannung und Leistung. Daraus berechnest du die Stromstärke:</p>
-        ${tri('P', 'U', 'I')}
-        <p>I = P : U = 2000 W : 230 V \u2248 8,7 A</p>` },
-    { h: 'Sicherheit',
-      body: `${warnbox('<b>230 V aus der Steckdose kann lebensgefährlich sein.</b><br>Im Unterricht arbeiten wir mit Netzgeräten bis höchstens 12 V. 230-V-Geräte misst du nur über ein Energiekostenmessgerät und zusammen mit deiner Lehrperson.')}` },
-    { h: 'Kurz testen',
-      check: { q: 'Ein Motor läuft an 12 V und nimmt 2 A auf. Welche Leistung hat er?',
-        options: ['24 W', '6 W', '14 W', '10 W'],
-        explain: 'P = U \u00B7 I = 12 V \u00B7 2 A = 24 W.' } }
-  ],
-  s5: [
-    { h: 'Wie schnell, wie viel?',
-      body: `<p>Leistung sagt, <b>wie schnell</b> Energie umgewandelt wird. Die <b>Energie</b> sagt, <b>wie viel</b> es insgesamt war. Beides hängt über die Zeit zusammen:</p>
-        ${merk('<b>E = P \u00B7 t</b>')}
-        <p>Für Strom ist das Joule zu klein. Deshalb rechnet man mit der <b>Kilowattstunde (kWh)</b>:</p>
-        ${merk('1 kWh = 1 kW während 1 h<br>1 kWh = 3,6 MJ = 3\u202F600\u202F000 J')}
-        <p>Auf der Stromrechnung bezahlst du vor allem Energie in kWh.</p>` },
-    { h: 'Der Stromzähler',
-      body: '<p>Stelle Leistung, Laufzeit und Preis ein und beobachte den Zähler. Rechne in kWh: Watt durch 1000, mal Stunden.</p>', sim: 'meter' },
-    { h: 'Viel Leistung heisst nicht viel Energie',
-      body: '<p>Ein Föhn hat 1800 W, ein Laptop nur 60 W. Wer braucht mehr Energie? Das hängt von der Laufzeit ab. Probiere es aus.</p>', sim: 'vergleich' },
-    { h: 'Standby kostet',
-      body: `<p>Ein Gerät im Standby braucht wenig Leistung, läuft aber das ganze Jahr.</p>
-        <p><b>Beispiel:</b> 10 W im Standby<br>Ein Jahr hat 365 \u00B7 24 = 8760 h.<br>E = 0,01 kW \u00B7 8760 h = 87,6 kWh<br>Bei 25 Rappen pro kWh sind das etwa 21,90 Franken.</p>
-        ${merk('Kleine Leistung mal lange Zeit ergibt viel Energie.')}` },
-    { h: 'Kurz testen',
-      check: { q: 'Ein 100-W-Gerät läuft 10 Stunden. Wie viel Energie wandelt es um?',
-        options: ['1 kWh', '10 kWh', '0,1 kWh', '1000 kWh'],
-        explain: '100 W = 0,1 kW. E = 0,1 kW \u00B7 10 h = 1 kWh.' } }
-  ],
-  s6: [
-    { h: 'Nutzen und Verlust',
-      body: `<p>Kein Gerät wandelt Energie vollständig in das um, was du willst. Eine Glühlampe soll leuchten, wird aber vor allem warm. Der nützliche Teil heisst <b>Nutzenergie</b>. Der Rest geht meist als Wärme in die Umgebung (<b>Energieentwertung</b>).</p>
-        <p>Energie geht dabei nicht verloren, sie ist nur nicht mehr nutzbar:</p>
-        ${merk('E_zu = E_nutz + E_Wärme')}
-        ${merk('<b>\u03B7 = E_nutz : E_zu</b><br>\u03B7 (Eta) heisst Wirkungsgrad und wird meist in Prozent angegeben.')}` },
-    { h: 'Wirkungsgrad einstellen',
-      body: '<p>Pro 100 J, die ins Gerät gehen: Wie viel kommt als Nutzenergie an? Tippe auf ein Beispiel. Die Werte sind Richtwerte und können je nach Gerät abweichen.</p>', sim: 'eta' },
-    { h: 'Rechenbeispiel Wasserkocher',
-      body: `<p>Ein Wasserkocher mit 2000 W läuft 60 s.</p>
-        <ul><li>Zugeführt: E = P \u00B7 t = 2000 W \u00B7 60 s = 120\u202F000 J = 120 kJ</li>
-        <li>Das Wasser nimmt 96 kJ auf (Nutzenergie).</li>
-        <li>\u03B7 = 96 kJ : 120 kJ = 0,8 = 80 %</li>
-        <li>24 kJ gehen als Wärme an Gerät und Umgebung.</li></ul>` },
-    { h: 'Die Grenze: 100 %',
-      body: `<p>Der Wirkungsgrad ist nie grösser als 100 %. Sonst würde ein Gerät mehr Energie abgeben, als man hineinsteckt. Das widerspricht der Energieerhaltung.</p>
-        <p>Ein Perpetuum mobile, das ohne Energiezufuhr dauernd läuft, gibt es deshalb nicht.</p>` },
-    { h: 'Kurz testen',
-      check: { q: 'Ein Motor nimmt 500 J auf und gibt 400 J Nutzenergie ab. Wie gross ist der Wirkungsgrad?',
-        options: ['80 %', '125 %', '20 %', '400 %'],
-        explain: '\u03B7 = 400 J : 500 J = 0,8 = 80 %.' } }
-  ]
-};
-const lc = (id, h) => LESSONS[id].find(c => c.h === h);
-const addAfter = (id, h, card) => { const a = LESSONS[id]; a.splice(a.findIndex(c => c.h === h) + 1, 0, card); };
-lc('s1', 'Hubarbeit und Lageenergie').body = lc('s1', 'Hubarbeit und Lageenergie').body.replace(/<p><b>Beispiel:<\/b>[\s\S]*?<\/p>/, '');
-lc('s2', 'Formeln umstellen').body = lc('s2', 'Formeln umstellen').body.replace(/<p><b>Beispiel Treppe:<\/b>[\s\S]*?<\/p>/, '');
-addAfter('s1', 'Hubarbeit und Lageenergie', { h: 'Vorgerechnet: Rucksack heben', worked: {
-  given: 'Du hebst einen Rucksack mit 8 kg um 1,5 m hoch. Wie gross ist die Hubarbeit?',
-  steps: [['Gewichtskraft berechnen', 'F = m \u00B7 g = 8 kg \u00B7 10 N/kg = 80 N'], ['Arbeit berechnen', 'W = F \u00B7 h = 80 N \u00B7 1,5 m = 120 J'], ['Antwort', 'Du verrichtest 120 J Hubarbeit. Sie steckt danach als Lageenergie im Rucksack.']] } });
-addAfter('s2', 'Das Treppenrennen', { h: 'Vorgerechnet: Treppenlauf', worked: {
-  given: 'Eine Person mit 60 kg steigt in 12 s eine Treppe mit 4 m Höhenunterschied hoch. Welche Leistung bringt sie auf?',
-  steps: [['Gewichtskraft berechnen', 'F = 60 kg \u00B7 10 N/kg = 600 N'], ['Arbeit berechnen', 'W = F \u00B7 h = 600 N \u00B7 4 m = 2400 J'], ['Leistung berechnen', 'P = W : t = 2400 J : 12 s = 200 W'], ['Antwort', 'Die Person leistet 200 W. Das ist ein Wert, den ein Mensch kurz schafft.']] } });
-addAfter('s3', 'Watt, Kilowatt, PS', { h: 'Vorgerechnet: Umrechnen', worked: {
-  given: 'Ein Auto hat 75 kW. Wie viele PS sind das?',
-  steps: [['kW in W umrechnen', '75 kW \u00B7 1000 = 75\u202F000 W'], ['W in PS umrechnen', '75\u202F000 W : 735 W/PS \u2248 102 PS'], ['Antwort', 'Das Auto hat etwa 102 PS.']] } });
-addAfter('s4', 'Typenschild lesen', { h: 'Vorgerechnet: Föhn', worked: {
-  given: 'Auf dem Föhn steht 230 V und 1800 W. Welche Stromstärke fliesst?',
-  steps: [['Formel umstellen', 'P = U \u00B7 I wird zu I = P : U'], ['Einsetzen', 'I = 1800 W : 230 V'], ['Ausrechnen', 'I \u2248 7,8 A'], ['Antwort', 'Beim Betrieb fliessen etwa 7,8 A.']] } });
-addAfter('s5', 'Der Stromzähler', { h: 'Vorgerechnet: Gaming-PC', worked: {
-  given: 'Ein Gaming-PC mit 400 W läuft 5 h. 1 kWh kostet 25 Rappen. Was kostet das?',
-  steps: [['Leistung in kW', '400 W = 0,4 kW'], ['Energie berechnen', 'E = P \u00B7 t = 0,4 kW \u00B7 5 h = 2 kWh'], ['Kosten berechnen', '2 kWh \u00B7 25 Rp./kWh = 50 Rappen'], ['Antwort', 'Der Abend am PC kostet 50 Rappen.']] } });
-const kocher = lc('s6', 'Rechenbeispiel Wasserkocher');
-kocher.h = 'Vorgerechnet: Wasserkocher'; delete kocher.body;
-kocher.worked = { given: 'Ein Wasserkocher mit 2000 W läuft 60 s. Das Wasser nimmt 96 kJ auf. Wie gross ist der Wirkungsgrad?',
-  steps: [['Zugeführte Energie', 'E = P \u00B7 t = 2000 W \u00B7 60 s = 120\u202F000 J = 120 kJ'], ['Wirkungsgrad als Anteil', '\u03B7 = E_nutz : E_zu = 96 kJ : 120 kJ = 0,8'], ['In Prozent', '0,8 \u00B7 100 = 80 %'], ['Antwort', '80 % sind nutzbar. Die übrigen 24 kJ gehen als Wärme an Gerät und Umgebung.']] };
-const GOALS = {
-  s1: ['Hubarbeit und Gewichtskraft berechnen', 'erklären, was die Goldene Regel der Mechanik sagt'],
-  s2: ['Leistung als Arbeit pro Zeit erklären', 'P, W oder t mit der Formel berechnen'],
-  s3: ['W, kW und PS umrechnen', 'Leistungen im Alltag einordnen'],
-  s4: ['die Formel P = U \u00B7 I anwenden', 'ein Typenschild lesen und die Stromstärke bestimmen'],
-  s5: ['Energie in kWh berechnen', 'Stromkosten bestimmen'],
-  s6: ['den Wirkungsgrad berechnen', 'erklären, warum er nie über 100 % liegt']
-};
-const LEARN = {
-  's1-gewicht': 'Hubarbeit und Lageenergie', 's1-hub': 'Hubarbeit und Lageenergie', 's1-richtung': 'Arbeit: Kraft über einen Weg', 's1-arbeit': 'Arbeit: Kraft über einen Weg',
-  's1-goldene': 'Die Goldene Regel der Mechanik', 's1-schiefe': 'Die Goldene Regel der Mechanik',
-  's2-def': 'Wer ist schneller oben?', 's2-vergleich': 'Wer ist schneller oben?', 's2-p': 'Vorgerechnet: Treppenlauf', 's2-treppe': 'Vorgerechnet: Treppenlauf', 's2-zeit': 'Formeln umstellen', 's2-arbeit': 'Formeln umstellen',
-  's3-kw-w': 'Watt, Kilowatt, PS', 's3-w-kw': 'Watt, Kilowatt, PS', 's3-einheit': 'Watt, Kilowatt, PS', 's3-ps': 'Vorgerechnet: Umrechnen', 's3-kw-ps': 'Vorgerechnet: Umrechnen', 's3-mensch': 'Leistungen einordnen',
-  's4-pui': 'Strom bringt Energie', 's4-spannung': 'Strom bringt Energie', 's4-strom': 'Vorgerechnet: Föhn', 's4-typenschild': 'Typenschild lesen', 's4-verdoppeln': 'Die Leistungs-Fläche', 's4-sicherheit': 'Sicherheit',
-  's5-kwh': 'Wie schnell, wie viel?', 's5-einheit': 'Wie schnell, wie viel?', 's5-zeit': 'Wie schnell, wie viel?', 's5-kosten': 'Vorgerechnet: Gaming-PC', 's5-standby': 'Standby kostet', 's5-fall': 'Viel Leistung heisst nicht viel Energie',
-  's6-def': 'Nutzen und Verlust', 's6-eta': 'Nutzen und Verlust', 's6-nutz': 'Nutzen und Verlust', 's6-verlust': 'Nutzen und Verlust', 's6-ueber100': 'Die Grenze: 100 %', 's6-kocher': 'Vorgerechnet: Wasserkocher'
-};
-STATIONS.forEach(s => {
-  s.lesson = LESSONS[s.id]; s.goals = GOALS[s.id];
-  s.items.forEach(t => { t.learn = LEARN[t.id]; if (!s.lesson.some(c => c.h === t.learn)) throw new Error('Lernkarte fehlt: ' + t.id); });
-});
-
-const LEVELS = [
-  { xp: 0, name: 'Stirnlampe', pw: '3 W' },
-  { xp: 80, name: 'E-Bike-Motor', pw: '250 W' },
-  { xp: 200, name: 'Föhn', pw: '2 kW' },
-  { xp: 380, name: 'Traktor', pw: '100 kW' },
-  { xp: 620, name: 'Lokomotive', pw: '6 MW' },
-  { xp: 920, name: 'Kraftwerk', pw: 'MW und mehr' }
-];
-
-/* ---------- Thema: Leistung ---------- */
-const TOPIC = {
-  id: 'leistung', storeKey: 'halingen-leistung-lernapp-v1', other: { title: 'Motor: Elektromotor und Generator', href: 'motor.html' },
-  title: 'Leistung', lead: 'Wie schnell wird Energie umgewandelt?', tag: 'Natur und Technik',
-  tips: ['Leistung heisst: Energie pro Sekunde.', 'Mein Wirkungsgrad ist 100 %. Das sagt zumindest mein Anwalt.'],
-  formulas: [
-    ['Gewichtskraft', 'F = m \u00B7 g', 'g = 10 N/kg'],
-    ['Arbeit', 'W = F \u00B7 s', 'Hubarbeit: W = m \u00B7 g \u00B7 h'],
-    ['Leistung', 'P = W : t', 'W = P \u00B7 t,  t = W : P'],
-    ['Einheiten', '1 W = 1 J/s', '1 kW = 1000 W,  1 PS \u2248 735 W'],
-    ['Elektrische Leistung', 'P = U \u00B7 I', 'I = P : U,  U = P : I'],
-    ['Elektrische Energie', 'E = P \u00B7 t', 'P in kW, t in h \u2192 E in kWh'],
-    ['Wirkungsgrad', '\u03B7 = E_nutz : E_zu', 'in Prozent angeben']
-  ]
-};
-
-/* ---------- Simulationen ---------- */
-function fmtP(p) {
-  return p >= 1e6 ? fmt(p / 1e6) + ' MW' : p >= 1000 ? fmt(p / 1000) + ' kW' : fmt(p) + ' W';
-}
-
-const SIMS = {
-  hub(el) {
-    el.innerHTML = `<div class="sim"><div class="hubvis">
-        <div class="rail" aria-hidden="true"><span class="rl top mono">4 m</span><span class="rl bot mono">0 m</span><div class="wtbox" id="wt"><span class="mono" id="wtl"></span></div></div>
-        <div class="readout mono" id="ro" aria-live="polite"></div></div>
-      ${sl('m', 'Masse', 1, 20, 1, 5, 'kg')}${sl('h', 'Höhe', 0.5, 4, 0.5, 2, 'm')}
-      <button class="btn sm" id="again">Nochmals heben</button></div>`;
-    const m = $id('m'), h = $id('h'), wt = $id('wt');
-    function upd(replay) {
-      const mv = +m.value, hv = +h.value, F = mv * 10, W = F * hv;
-      $id('mv').textContent = fmt(mv); $id('hv').textContent = fmt(hv);
-      $id('wtl').textContent = fmt(mv) + ' kg';
-      wt.style.width = (30 + mv * 2) + 'px';
-      $id('ro').innerHTML = `F = ${fmt(mv)} kg \u00B7 10 N/kg = <b>${fmt(F)} N</b><br>W = ${fmt(F)} N \u00B7 ${fmt(hv)} m = <b>${fmt(W)} J</b>`;
-      if (replay) { wt.style.transition = 'none'; wt.style.transform = 'translateY(0)'; void wt.offsetWidth; wt.style.transition = ''; }
-      wt.style.transform = `translateY(-${hv / 4 * 150}px)`;
-    }
-    wt.style.transform = 'translateY(0)'; void wt.offsetWidth;
-    upd(false);
-    m.addEventListener('input', () => upd(false));
-    h.addEventListener('input', () => upd(false));
-    $id('again').addEventListener('click', () => upd(true));
-  },
-
-  ramp(el) {
-    el.innerHTML = `<div class="sim">
-      <div class="seg3" role="group" aria-label="Länge der Strecke">
-        <button class="btn sm on" data-s="2">2 m senkrecht</button><button class="btn sm" data-s="4">4 m Rampe</button><button class="btn sm" data-s="8">8 m Rampe</button></div>
-      ${brow('Kraft', 'bF', 'vF')}${brow('Weg', 'bS', 'vS')}${brow('Arbeit', 'bW', 'vW')}
-      <p class="readout mono" id="ro" aria-live="polite"></p></div>`;
-    function upd(s) {
-      const F = 800 / s;
-      $id('bF').style.width = (F / 400 * 100) + '%'; $id('vF').textContent = fmt(F) + ' N';
-      $id('bS').style.width = (s / 8 * 100) + '%'; $id('vS').textContent = fmt(s) + ' m';
-      $id('bW').style.width = '100%'; $id('vW').textContent = '800 J';
-      $id('ro').innerHTML = `W = F \u00B7 s = ${fmt(F)} N \u00B7 ${fmt(s)} m = <b>800 J</b>`;
-      el.querySelectorAll('[data-s]').forEach(b => b.classList.toggle('on', +b.dataset.s === s));
-    }
-    ['bF', 'bS', 'bW'].forEach(i => { $id(i).style.width = '0%'; });
-    nf(el, () => upd(2));
-    el.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => upd(+b.dataset.s)));
-  },
-
-  runner(el) {
-    const lane = (k, name) => `<div class="lane"><div class="trk" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><div class="run" id="run${k}"></div></div>
-      <div class="lname">${name}</div><div class="btrack"><div class="bfill" id="p${k}"></div></div><div class="mono small lpl" id="pl${k}"></div></div>`;
-    el.innerHTML = `<div class="sim"><div class="lanes">${lane('A', 'Anna')}${lane('B', 'Ben')}</div>
-      ${sl('tA', 'Zeit Anna', 3, 30, 1, 10, 's')}${sl('tB', 'Zeit Ben', 3, 30, 1, 20, 's')}
-      <button class="btn btn-primary sm" id="go">Start</button>
-      <p class="readout mono" id="ro" aria-live="polite">Beide leisten W = 60 kg \u00B7 10 N/kg \u00B7 3 m = 1800 J.</p></div>`;
-    function upd() {
-      ['A', 'B'].forEach(k => {
-        const t = +$id('t' + k).value, P = 1800 / t;
-        $id('t' + k + 'v').textContent = fmt(t);
-        $id('p' + k).style.width = (P / 600 * 100) + '%';
-        $id('pl' + k).textContent = `P = 1800 J : ${fmt(t)} s = ${fmt(P, 1)} W`;
-      });
-    }
-    upd();
-    $id('tA').addEventListener('input', upd); $id('tB').addEventListener('input', upd);
-    $id('go').addEventListener('click', () => {
-      ['A', 'B'].forEach(k => {
-        const r = $id('run' + k), t = +$id('t' + k).value;
-        r.style.transition = 'none'; r.style.transform = 'translateY(0)'; void r.offsetWidth;
-        r.style.transition = reduced() ? 'none' : `transform ${t * 0.25}s linear`;
-        r.style.transform = 'translateY(-118px)';
-      });
-    });
-  },
-
-  scale(el) {
-    const items = [['Handy-Ladegerät', 10], ['Mensch, kurzzeitig', 200], ['Föhn', 1800], ['Auto-Motor', 100000], ['E-Lok', 6000000]];
-    el.innerHTML = `<div class="sim">${items.map((it, i) =>
-      `<button class="srow" data-i="${i}"><span class="bname">${it[0]}</span><span class="btrack"><span class="bfill" id="sb${i}"></span></span><b class="mono bval">ca. ${fmtP(it[1])}</b></button>`).join('')}
-      <p class="readout" id="ro" aria-live="polite">Tippe auf einen Balken.</p></div>`;
-    items.forEach((it, i) => { $id('sb' + i).style.width = '0%'; });
-    nf(el, () => items.forEach((it, i) => { $id('sb' + i).style.width = (Math.log10(it[1]) / 7 * 100) + '%'; }));
-    el.querySelectorAll('.srow').forEach(b => b.addEventListener('click', () => {
-      const it = items[+b.dataset.i], r = it[1] / 200;
-      el.querySelectorAll('.srow').forEach(x => x.classList.toggle('on', x === b));
-      $id('ro').innerHTML = r === 1 ? `<b>${it[0]}</b>: Das ist unser Vergleichswert von etwa 200 W.`
-        : r > 1 ? `<b>${it[0]}</b> hat etwa das <b>${fmt(r, 1)}-Fache</b> der Leistung eines Menschen (200 W).`
-          : `<b>${it[0]}</b> hat nur etwa <b>${fmt(1 / r, 1)}-mal weniger</b> Leistung als ein Mensch (200 W).`;
-    }));
-  },
-
-  convert(el) {
-    el.innerHTML = `<div class="sim">${sl('kw', 'Leistung', 0.5, 150, 0.5, 2.5, 'kW')}
-      <div class="trio"><div><span class="k">Watt</span><b class="mono" id="cw"></b></div>
-      <div><span class="k">Kilowatt</span><b class="mono" id="ck"></b></div>
-      <div><span class="k">PS</span><b class="mono" id="cp"></b></div></div>
-      <p class="small">1 kW = 1000 W und 1 PS \u2248 735 W</p></div>`;
-    const kw = $id('kw');
-    function upd() {
-      const k = +kw.value, W = k * 1000;
-      $id('kwv').textContent = fmt(k);
-      $id('cw').textContent = fmt(W) + ' W';
-      $id('ck').textContent = fmt(k) + ' kW';
-      $id('cp').textContent = fmt(W / 735, 1) + ' PS';
-    }
-    upd(); kw.addEventListener('input', upd);
-  },
-
-  pui(el) {
-    el.innerHTML = `<div class="sim"><div class="puivis"><div class="areabox" aria-hidden="true"><div class="area" id="ar"><span class="mono">P</span></div></div>
-      <div class="lampwrap" aria-hidden="true"><div class="lamp" id="lamp"></div><span class="small">Helligkeit</span></div></div>
-      <p class="readout mono" id="ro" aria-live="polite"></p>
-      ${sl('U', 'Spannung U', 1, 24, 1, 12, 'V')}${sl('I', 'Stromstärke I', 0.1, 5, 0.1, 2, 'A')}</div>`;
-    const U = $id('U'), I = $id('I');
-    function upd() {
-      const u = +U.value, i = +I.value, P = Math.round(u * i * 100) / 100;
-      $id('Uv').textContent = fmt(u); $id('Iv').textContent = fmt(i);
-      $id('ar').style.width = (u / 24 * 100) + '%'; $id('ar').style.height = (i / 5 * 100) + '%';
-      $id('lamp').style.opacity = (0.12 + 0.88 * P / 120).toFixed(2);
-      $id('ro').innerHTML = `P = U \u00B7 I = ${fmt(u)} V \u00B7 ${fmt(i)} A = <b>${fmt(P, 2)} W</b>`;
-    }
-    $id('ar').style.width = '0%'; $id('ar').style.height = '0%';
-    nf(el, upd);
-    U.addEventListener('input', upd); I.addEventListener('input', upd);
-    // Zahlen sofort anzeigen
-    $id('Uv').textContent = fmt(+U.value); $id('Iv').textContent = fmt(+I.value);
-  },
-
-  meter(el) {
-    el.innerHTML = `<div class="sim"><div class="meterbox"><div class="mdisp mono" id="E">0,00</div><span class="mu mono">kWh</span></div>
-      <div class="btrack"><div class="bfill" id="bE"></div></div>
-      <p class="mcost">Kosten: <b class="mono" id="K">0,0</b> <span class="mono">Rappen</span></p>
-      <p class="readout mono" id="ro" aria-live="polite"></p>
-      ${sl('P', 'Leistung', 100, 3000, 100, 1000, 'W')}${sl('t', 'Laufzeit', 0.5, 10, 0.5, 2, 'h')}${sl('pr', 'Preis pro kWh', 20, 30, 5, 25, 'Rappen')}</div>`;
-    let cur = 0;
-    function upd() {
-      const P = +$id('P').value, t = +$id('t').value, pr = +$id('pr').value;
-      const E = P / 1000 * t, K = E * pr;
-      $id('Pv').textContent = fmt(P); $id('tv').textContent = fmt(t); $id('prv').textContent = fmt(pr);
-      $id('bE').style.width = Math.min(100, E / 30 * 100) + '%';
-      $id('ro').innerHTML = `E = ${fmt(P / 1000)} kW \u00B7 ${fmt(t)} h = <b>${fmt(E, 2)} kWh</b><br>Kosten = ${fmt(E, 2)} kWh \u00B7 ${fmt(pr)} Rp. = <b>${fmt(K, 1)} Rappen</b>`;
-      const from = cur; cur = E;
-      tween(from, E, 700, v => { if (!el.isConnected) return; $id('E').textContent = fmt(v, 2); $id('K').textContent = fmt(v * pr, 1); });
-    }
-    ['P', 't', 'pr'].forEach(i => $id(i).addEventListener('input', upd));
-    $id('bE').style.width = '0%';
-    nf(el, upd);
-  },
-
-  vergleich(el) {
-    el.innerHTML = `<div class="sim"><div class="tag">Leistung</div>
-      ${brow('Föhn', 'lF', 'lFv')}${brow('Laptop', 'lL', 'lLv')}
-      <div class="tag" style="margin-top:12px">Energie</div>
-      ${brow('Föhn', 'eF', 'eFv')}${brow('Laptop', 'eL', 'eLv')}
-      <p class="verdict" id="vd" aria-live="polite"></p>
-      ${sl('tf', 'Föhn läuft', 1, 15, 1, 5, 'min')}${sl('tl', 'Laptop läuft', 0.5, 6, 0.5, 3, 'h')}</div>`;
-    $id('lFv').textContent = '1800 W'; $id('lLv').textContent = '60 W';
-    ['lF', 'lL', 'eF', 'eL'].forEach(i => { $id(i).style.width = '0%'; });
-    function upd() {
-      const tf = +$id('tf').value, tl = +$id('tl').value;
-      const Ef = 1.8 * tf / 60, El = 0.06 * tl;
-      $id('tfv').textContent = fmt(tf); $id('tlv').textContent = fmt(tl);
-      $id('lF').style.width = '100%'; $id('lL').style.width = (60 / 1800 * 100) + '%';
-      $id('eF').style.width = Math.min(100, Ef / 0.5 * 100) + '%'; $id('eL').style.width = Math.min(100, El / 0.5 * 100) + '%';
-      $id('eFv').textContent = fmt(Ef, 3) + ' kWh'; $id('eLv').textContent = fmt(El, 3) + ' kWh';
-      const a = Math.round(Ef * 10000), b = Math.round(El * 10000);
-      $id('vd').innerHTML = a > b ? 'Der <b>Föhn</b> braucht mehr Energie.' : a < b ? 'Der <b>Laptop</b> braucht mehr Energie.' : 'Beide brauchen <b>gleich viel</b> Energie.';
-    }
-    $id('tf').addEventListener('input', upd); $id('tl').addEventListener('input', upd);
-    nf(el, upd);
-    $id('tfv').textContent = '5'; $id('tlv').textContent = '3';
-  },
-
-  eta(el) {
-    const pre = [['Glühlampe', 5], ['Benzinmotor', 30], ['Wasserkocher', 85], ['Elektromotor', 90]];
-    el.innerHTML = `<div class="sim"><div class="chips" role="group" aria-label="Beispiele">${pre.map(p => `<button class="btn sm" data-e="${p[1]}">${p[0]} \u2248 ${p[1]} %</button>`).join('')}</div>
-      <div class="stack" aria-hidden="true"><div class="sn" id="sn"></div><div class="sw" id="sw"></div></div>
-      <div class="stlab"><span><b class="mono" id="nL"></b> Nutzenergie</span><span><b class="mono" id="wL"></b> Wärme</span></div>
-      <p class="readout mono" id="ro" aria-live="polite"></p>
-      ${sl('eta', 'Wirkungsgrad \u03B7', 0, 100, 5, 80, '%')}</div>`;
-    const e = $id('eta');
-    function upd() {
-      const v = +e.value;
-      $id('etav').textContent = fmt(v);
-      $id('sn').style.width = v + '%'; $id('sw').style.width = (100 - v) + '%';
-      $id('nL').textContent = fmt(v) + ' J'; $id('wL').textContent = fmt(100 - v) + ' J';
-      $id('ro').innerHTML = `\u03B7 = ${fmt(v)} J : 100 J = <b>${fmt(v)} %</b>`;
-    }
-    $id('sn').style.width = '0%'; $id('sw').style.width = '100%';
-    $id('etav').textContent = '80';
-    nf(el, upd);
-    e.addEventListener('input', upd);
-    el.querySelectorAll('[data-e]').forEach(b => b.addEventListener('click', () => { e.value = b.dataset.e; upd(); }));
-  }
-};
-
-
-const INTERVALS = [0, 1, 3, 7, 14]; // Tage bis zur nächsten Wiederholung je Box
-const ROUND_SIZE = 6;
-
-/* ---------- Interaktive Simulationen (nur Geometrie, keine Illustrationen) ---------- */
-const $id = id => document.getElementById(id);
-const nextFrame = f => requestAnimationFrame(() => requestAnimationFrame(f));
-const nf = (host, f) => nextFrame(() => { if (host.isConnected) f(); });
-const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const sl = (id, label, min, max, step, val, unit) =>
-  `<label class="sl"><span class="sll">${label}: <b class="mono" id="${id}v"></b> ${unit}</span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}"></label>`;
-const brow = (name, id, vid) =>
-  `<div class="brow"><span class="bname">${name}</span><div class="btrack"><div class="bfill" id="${id}"></div></div><b class="mono bval" id="${vid}"></b></div>`;
-// Zahl weich hochzählen lassen
-function tween(from, to, ms, cb) {
-  if (reduced() || from === to) { cb(to); return; }
-  const t0 = performance.now();
-  (function step(t) {
-    const p = Math.min(1, (t - t0) / ms);
-    cb(from + (to - from) * (1 - Math.pow(1 - p, 3)));
-    if (p < 1) requestAnimationFrame(step);
-  })(t0);
-}
-
-/* ---------- Speicher ---------- */
-const KEY = TOPIC.storeKey;
-const CARD = TOPIC.cardName || 'Formelkarte';
-function defaults() { return { xp: 0, streak: 0, lastDay: null, stars: {}, items: {}, rounds: 0, lessons: {}, nick: null, challenges: {}, classCode: '', weekKey: 0, weekXp: 0, introDone: false, realName: '', trophies: {}, trophySeen: {}, perfect: 0, reviews: 0 }; }
-let memoryOnly = null;
-function load() {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) return Object.assign(defaults(), JSON.parse(raw));
-  } catch (e) { /* Speicher nicht verfügbar */ }
-  return defaults();
-}
-function save() {
-  try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { memoryOnly = true; }
-}
-let state = load();
-if (!state.nick) { state.nick = newNick(); }
-
-/* ---------- Spielregeln ---------- */
-function dayIdx() {
-  const d = new Date();
-  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-}
-function streakNow() {
-  if (state.lastDay === null) return 0;
-  return (dayIdx() - state.lastDay) > 2 ? 0 : state.streak;
-}
-function touchStreak() {
-  const t = dayIdx();
-  if (state.lastDay === null) state.streak = 1;
-  else {
-    const diff = t - state.lastDay;
-    if (diff === 0) { /* heute schon gezählt */ }
-    else if (diff <= 2) state.streak += 1; // ein freier Tag ist erlaubt (Schonfrist)
-    else state.streak = 1;
-  }
-  state.lastDay = t;
-}
-/* ---------- Trophäen ---------- */
-const allSt = f => STATIONS.every(st => f(st));
-const TROPHIES = [
-  { id: 'start', icon: '\u{1F680}', name: 'Erster Schritt', how: 'Schliesse deine erste Runde ab.', test: s => s.rounds >= 1 },
-  { id: 'lektion', icon: '\u{1F4D6}', name: 'Neugierig', how: 'Schliesse eine Lektion ab.', test: s => Object.keys(s.lessons).length >= 1 },
-  { id: 'lektionen', icon: '\u{1F4DA}', name: 'Bücherwurm', how: 'Schliesse alle Lektionen ab.', test: s => allSt(st => s.lessons[st.id]) },
-  { id: 'perfekt', icon: '\u{1F3AF}', name: 'Volltreffer', how: 'Löse eine Runde fehlerlos beim ersten Versuch.', test: s => s.perfect >= 1 },
-  { id: 'perfekt3', icon: '\u{1F48E}', name: 'Meisterschütze', how: 'Löse drei Runden fehlerlos.', test: s => s.perfect >= 3 },
-  { id: 'stern3', icon: '\u2B50', name: 'Dreifacher Stern', how: 'Hole in einer Station drei Sterne.', test: s => STATIONS.some(st => (s.stars[st.id] || 0) >= 3) },
-  { id: 'alle1', icon: '\u{1F5FA}', name: 'Entdeckerin', how: 'Bestehe jede Station mit mindestens einem Stern.', test: s => allSt(st => (s.stars[st.id] || 0) >= 1) },
-  { id: 'alle3', icon: '\u{1F31F}', name: 'Sternenhimmel', how: 'Hole in allen Stationen drei Sterne.', test: s => allSt(st => (s.stars[st.id] || 0) >= 3) },
-  { id: 'serie3', icon: '\u{1F525}', name: 'Dranbleiber', how: 'Halte eine Serie von 3 Tagen.', test: () => streakNow() >= 3 },
-  { id: 'serie7', icon: '\u{1F3C3}', name: 'Wochenläufer', how: 'Halte eine Serie von 7 Tagen.', test: () => streakNow() >= 7 },
-  { id: 'stufe3', icon: '\u{1F50B}', name: 'Aufgeladen', how: 'Erreiche Stufe 3.', test: s => levelOf(s.xp) >= 2 },
-  { id: 'stufe6', icon: '\u{1F451}', name: 'Höchste Stufe', how: 'Erreiche Stufe 6.', test: s => levelOf(s.xp) >= 5 },
-  { id: 'auffrischen', icon: '\u{1F9E0}', name: 'Gedächtnistrainer', how: 'Schliesse drei Auffrischrunden ab.', test: s => s.reviews >= 3 },
-  { id: 'challenge', icon: '\u{1F3C1}', name: 'Herausforderer', how: 'Spiele eine Challenge.', test: s => Object.keys(s.challenges).length >= 1 },
-  { id: 'challenge6', icon: '\u{1F3C6}', name: 'Challenge-Meister', how: 'Löse eine Challenge fehlerlos (6 von 6).', test: s => Object.keys(s.challenges).some(k => s.challenges[k].c === 6) },
-  { id: 'klasse', icon: '\u{1F465}', name: 'Teamplayer', how: 'Tritt einer Klasse bei.', test: s => !!s.classCode },
-  { id: 'runden10', icon: '\u{1F396}', name: 'Übungsmeister', how: 'Schliesse 10 Runden ab.', test: s => s.rounds >= 10 }
-];
-function checkTrophies() {
-  const fresh = [];
-  TROPHIES.forEach(t => { if (!state.trophies[t.id] && t.test(state)) { state.trophies[t.id] = Date.now(); fresh.push(t); } });
-  return fresh;
-}
-const newTrophyHtml = list => (list && list.length) ? list.map(t => `<div class="fb good"><div class="fbt"><span aria-hidden="true">${t.icon}</span> Neue Trophäe: ${t.name}</div><p class="small">${t.how}</p></div>`).join('') : '';
-function trophyBar() {
-  const n = TROPHIES.filter(t => state.trophies[t.id]).length, fresh = TROPHIES.filter(t => state.trophies[t.id] && !state.trophySeen[t.id]).length;
-  return `<button class="trophybar" data-act="trophies"><span class="ticon" aria-hidden="true">\u{1F3C6}</span><span class="tb"><b>Trophäen</b><small>${n} von ${TROPHIES.length} freigeschaltet</small></span>${fresh ? `<span class="tnew">${fresh} neu</span>` : ''}</button>`;
-}
-function viewTrophies() {
-  const n = TROPHIES.filter(t => state.trophies[t.id]).length;
-  return `
-  <main class="wrap">
-    <div class="rtop"><button class="btn sm" data-act="home">Zum Lernpfad</button><span class="mono small">${n} von ${TROPHIES.length}</span></div>
-    <h2 class="sumh">Trophäen</h2>
-    <p class="small">Schalte Trophäen frei, indem du lernst, übst und dranbleibst. Gesperrte Trophäen zeigen dir, was du dafür tun musst.</p>
-    <div class="tgrid">${TROPHIES.map(t => { const got = !!state.trophies[t.id]; return `<div class="trophy ${got ? 'got' : 'locked'}"><span class="ticon" aria-hidden="true">${got ? t.icon : '\u{1F512}'}</span><b>${t.name}</b><small>${t.how}</small>${got ? '<span class="tdone">freigeschaltet</span>' : ''}</div>`; }).join('')}</div>
-  </main>`;
-}
-
-function bumpXp(n) {
-  const wk = Math.floor((dayIdx() + 3) / 7);
-  if (state.weekKey !== wk) { state.weekKey = wk; state.weekXp = 0; }
-  state.xp += n; state.weekXp += n;
-}
-function levelOf(xp) {
-  let l = 0;
-  LEVELS.forEach((lv, i) => { if (xp >= lv.xp) l = i; });
-  return l;
-}
-function starsFor(c) { return c >= 6 ? 3 : c === 5 ? 2 : c === 4 ? 1 : 0; }
-function stationUnlocked(s) {
-  if (s.nr === 1) return true;
-  const prev = STATIONS[s.nr - 2];
-  return (state.stars[prev.id] || 0) >= 1;
-}
-function mastered(t) { const it = state.items[t.id]; return !!it && it.box >= 2; }
-function reviewPool() {
-  const pool = [];
-  STATIONS.forEach(s => { if (state.stars[s.id] !== undefined) s.items.forEach(t => pool.push(t)); });
-  return pool;
-}
-function dueCount() {
-  const now = Date.now();
-  return reviewPool().filter(t => { const it = state.items[t.id]; return !it || it.due <= now; }).length;
-}
-function stationOf(tpl) { return STATIONS.find(s => s.items.some(t => t.id === tpl.id)); }
-
-/* ---------- Runde ---------- */
-let R = null;
-let ui = { screen: 'home', formulas: false, confirmReset: false, chCode: '', chErr: '', clsErr: '', anim: true };
-
-function inst(tpl, retry) {
-  const d = tpl.make();
-  if (d.type === 'mc') d.shown = shuffle(d.options.map((t, i) => ({ t, ok: i === 0 })));
-  return { tpl, d, retry: !!retry, attempts: 0, done: false, sel: null, input: '', fb: null, firstLogged: false };
-}
-function buildChallenge(code) {
-  const m = /^([1-6])-/.exec(code); const N = m ? +m[1] : 6;
-  RNG = seeded(TOPIC.id + ':' + code);
-  try {
-    const used = new Set(), picks = [];
-    for (let i = 0; i < 6; i++) {
-      const st = STATIONS[i % N];
-      const pool = st.items.filter(t => !used.has(t.id));
-      const t = rnd(pool.length ? pool : st.items);
-      used.add(t.id); picks.push(t);
-    }
-    return shuffle(picks).map(t => inst(t));
-  } finally { RNG = Math.random; }
-}
-function startRound(what, code) {
-  if (what === 'challenge') {
-    R = { mode: 'challenge', code, st: null, queue: buildChallenge(code), i: 0, results: [], xp: 0, base: 6, t0: Date.now() };
-    ui.screen = 'round'; ui.formulas = false;
-    render();
-    return;
-  }
-  let tpls, st = null;
-  if (what === 'review') {
-    const now = Date.now();
-    tpls = reviewPool().map(t => {
-      const it = state.items[t.id] || { box: 0, due: 0 };
-      return { t, k: (it.due <= now ? 0 : 1) * 10 + it.box + Math.random() };
-    }).sort((a, b) => a.k - b.k).slice(0, ROUND_SIZE).map(x => x.t);
-    tpls = shuffle(tpls);
-  } else {
-    st = STATIONS.find(s => s.id === what);
-    tpls = shuffle(st.items);
-  }
-  R = { mode: what === 'review' ? 'review' : 'station', st, queue: tpls.map(t => inst(t)), i: 0, results: [], xp: 0, base: tpls.length };
-  ui.screen = 'round'; ui.formulas = false;
-  render();
-}
-function logFirst(q, ok) {
-  if (q.retry || q.firstLogged) return;
-  q.firstLogged = true;
-  R.results.push({ id: q.tpl.id, ok, topic: q.tpl.topic });
-  if (!ok && R.mode !== 'challenge') R.queue.push(inst(q.tpl, true));
-}
-function parseNum(s) {
-  s = String(s).trim().replace(/[\s\u202F\u2019']/g, '').replace(',', '.');
-  if (!/^-?\d*\.?\d+$/.test(s)) return NaN;
-  return parseFloat(s);
-}
-function answerMC(i) {
-  const q = R.queue[R.i];
-  if (q.done) return;
-  const ok = q.d.shown[i].ok;
-  q.sel = i; q.done = true;
-  logFirst(q, ok);
-  if (ok) {
-    const gain = q.retry ? 3 : 10; R.xp += gain;
-    q.fb = { kind: 'good', title: q.retry ? 'Richtig. Jetzt sitzt es.' : 'Richtig.', body: q.d.explain, xp: gain };
-  } else {
-    q.fb = { kind: 'bad', title: 'Nicht ganz.', body: q.d.explain + (q.retry || R.mode === 'challenge' ? '' : '<br><br>Diese Frage kommt am Ende der Runde noch einmal.') };
-  }
-  render('fb');
-}
-function checkNum() {
-  const q = R.queue[R.i];
-  if (q.done) return;
-  const el = document.getElementById('ans');
-  q.input = el ? el.value : q.input;
-  const x = parseNum(q.input);
-  if (isNaN(x)) { q.fb = { kind: 'warn', title: 'Gib eine Zahl ein.', body: 'Zum Beispiel 120 oder 2,5.' }; render('keep'); return; }
-  const d = q.d;
-  const ok = Math.abs(x - d.ans) <= Math.max(Math.abs(d.ans) * d.tolRel, d.tolAbs, 1e-9);
-  if (ok) {
-    q.done = true;
-    logFirst(q, q.attempts === 0);
-    const gain = q.retry ? 3 : (q.attempts === 0 ? 10 : 5); R.xp += gain;
-    q.fb = { kind: 'good', title: q.attempts === 0 ? 'Richtig.' : 'Richtig im zweiten Versuch.', body: d.explain, xp: gain };
-  } else if (q.attempts === 0 && R.mode !== 'challenge') {
-    q.attempts = 1;
-    logFirst(q, false);
-    q.fb = { kind: 'warn', title: 'Noch nicht.', body: 'Tipp: ' + d.hint + '<br>Du hast noch einen Versuch.' };
-  } else {
-    q.done = true;
-    logFirst(q, false);
-    q.fb = { kind: 'bad', title: 'Nicht ganz.', body: 'Richtig wäre ' + fmt(d.ans, 2) + ' ' + d.unit + '.<br>' + d.explain };
-  }
-  render('fb');
-}
-function nextQ() {
-  R.i += 1;
-  if (R.i >= R.queue.length) finishRound(); else render();
-}
-function finishRound() {
-  const before = state.xp;
-  const lvBefore = levelOf(before);
-  const c = R.results.slice(0, R.base).filter(r => r.ok).length;
-  const stars = starsFor(c);
-  let bonus = 0;
-  if (R.mode === 'station') bonus = stars === 3 ? 20 : stars === 2 ? 10 : stars === 1 ? 5 : 0;
-  else if (R.mode === 'challenge') bonus = c === 6 ? 20 : c >= 4 ? 10 : 0;
-  else bonus = c >= 5 ? 10 : 0;
-  // Karteikasten aktualisieren
-  const now = Date.now();
-  R.results.forEach(r => {
-    const it = state.items[r.id] || { box: 0, due: 0 };
-    it.box = r.ok ? Math.min(4, it.box + 1) : 0;
-    it.due = now + INTERVALS[it.box] * 86400000;
-    state.items[r.id] = it;
-  });
-  if (R.mode === 'station') state.stars[R.st.id] = Math.max(state.stars[R.st.id] || 0, stars);
-  let chInfo = null;
-  if (R.mode === 'challenge') {
-    const t = Math.max(1, Math.round((Date.now() - R.t0) / 1000));
-    const prev = state.challenges[R.code] || null;
-    if (!prev) state.challenges[R.code] = { c, t };
-    chInfo = { code: R.code, c, t, prev, line: `${state.nick} \u00B7 ${c} von 6 \u00B7 ${t} s \u00B7 Code ${R.code}` };
-  }
-  const gained = R.xp + bonus;
-  bumpXp(gained);
-  state.rounds += 1;
-  if (c === R.base) state.perfect = (state.perfect || 0) + 1;
-  if (R.mode === 'review') state.reviews = (state.reviews || 0) + 1;
-  touchStreak();
-  const newTrophies = checkTrophies();
-  save();
-  R.summary = {
-    c, stars, bonus, gained, base: R.base, ch: chInfo,
-    levelUp: levelOf(state.xp) > lvBefore ? levelOf(state.xp) : null, newTrophies,
-    missed: R.results.filter(r => !r.ok).map(r => r.topic)
-  };
-  if (R.mode === 'challenge') { BE.chBoard = null; BE.chStatus = ''; BE.chClasses = null; BE.chClsStatus = ''; }
-  ui.screen = 'summary';
-  render();
-  if (state.classCode) pushProgress();
-  if (R.mode === 'challenge') afterChallenge(chInfo);
-}
-
-/* ---------- Darstellung ---------- */
-const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-const starTxt = n => '\u2605'.repeat(n) + '\u2606'.repeat(3 - n);
-
-function formulaCard() {
-  const rows = TOPIC.formulas;
-  return `<section class="card formulas" aria-label="${CARD}">
-    <div class="tag">${CARD}</div>
-    <table>${rows.map(r => `<tr><th scope="row">${r[0]}</th><td><span class="mono b">${r[1]}</span><br><span class="mono m">${r[2]}</span></td></tr>`).join('')}</table>
-  </section>`;
-}
-
 /* ---------- QR-Lernstand: Verschlüsselung (WebCrypto) ----------
    Hybridverfahren: Die Schüler-App kennt nur den ÖFFENTLICHEN Schlüssel der Lehrperson.
    Pro Code wird ein neues Schlüsselpaar erzeugt (ECDH P-256), daraus per HKDF ein AES-GCM-Schlüssel
@@ -1874,779 +869,561 @@ const LQ = (() => {
   };
 })();
 
+const CFG = window.APP_CONFIG || {};
+const DATA = [
+ {
+  "nr": 1,
+  "titel": "Wesen und Bedeutung von Naturwissenschaften und Technik verstehen",
+  "komp": [
+   {
+    "code": "NT.1.1",
+    "ich": "Ich kann Wege zur Gewinnung naturwissenschaftlicher Erkenntnisse beschreiben und deren kulturelle Bedeutung reflektieren.",
+    "lp": "Die Schülerinnen und Schüler können Wege zur Gewinnung naturwissenschaftlicher Erkenntnisse beschreiben und deren kulturelle Bedeutung reflektieren.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie, Technik",
+      "thema": "Prinzipien der Naturwissenschaften"
+     }
+    ]
+   },
+   {
+    "code": "NT.1.2",
+    "ich": "Ich kann technische Alltagsgeräte bedienen und ihre Funktionsweise erklären.",
+    "lp": "Die Schülerinnen und Schüler können technische Alltagsgeräte bedienen und ihre Funktionsweise erklären.",
+    "tags": [
+     {
+      "fach": "Technik",
+      "thema": "Technik im Alltag"
+     }
+    ]
+   },
+   {
+    "code": "NT.1.3",
+    "ich": "Ich kann die Nachhaltigkeit naturwissenschaftlich-technischer Anwendungen diskutieren.",
+    "lp": "Die Schülerinnen und Schüler können die Nachhaltigkeit naturwissenschaftlich-technischer Anwendungen diskutieren.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie, Technik",
+      "thema": "Nachhaltigkeit von Anwendungen"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 2,
+  "titel": "Stoffe untersuchen und gewinnen",
+  "komp": [
+   {
+    "code": "NT.2.1",
+    "ich": "Ich kann Stoffe untersuchen, beschreiben und ordnen.",
+    "lp": "Die Schülerinnen und Schüler können Stoffe untersuchen, beschreiben und ordnen.",
+    "tags": [
+     {
+      "fach": "Chemie, Physik",
+      "thema": "Stoffeigenschaften"
+     },
+     {
+      "fach": "Chemie, Physik",
+      "thema": "Teilchenmodell"
+     }
+    ]
+   },
+   {
+    "code": "NT.2.2",
+    "ich": "Ich kann Stoffe aufgrund ihrer Eigenschaften gezielt trennen.",
+    "lp": "Die Schülerinnen und Schüler können Stoffe aufgrund ihrer Eigenschaften gezielt trennen.",
+    "tags": [
+     {
+      "fach": "Chemie, Technik",
+      "thema": "Trennverfahren"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 3,
+  "titel": "Chemische Reaktionen erforschen",
+  "komp": [
+   {
+    "code": "NT.3.1",
+    "ich": "Ich kann Stoffumwandlungen untersuchen und beschreiben.",
+    "lp": "Die Schülerinnen und Schüler können Stoffumwandlungen untersuchen und beschreiben.",
+    "tags": [
+     {
+      "fach": "Chemie",
+      "thema": "Chemische Reaktionen"
+     },
+     {
+      "fach": "Chemie, Technik",
+      "thema": "Nachweisreaktionen"
+     }
+    ]
+   },
+   {
+    "code": "NT.3.2",
+    "ich": "Ich kann Stoffumwandlungen einordnen und erklären.",
+    "lp": "Die Schülerinnen und Schüler können Stoffumwandlungen einordnen und erklären.",
+    "tags": [
+     {
+      "fach": "Chemie",
+      "thema": "Periodensystem und Modelle"
+     }
+    ]
+   },
+   {
+    "code": "NT.3.3",
+    "ich": "Ich kann Stoffe als globale Ressource erkennen und nachhaltig damit umgehen.",
+    "lp": "Die Schülerinnen und Schüler können Stoffe als globale Ressource erkennen und nachhaltig damit umgehen.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie, Technik",
+      "thema": "Stoffkreisläufe"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 4,
+  "titel": "Energieumwandlungen analysieren und reflektieren",
+  "komp": [
+   {
+    "code": "NT.4.1",
+    "ich": "Ich kann Energieformen und -umwandlungen analysieren.",
+    "lp": "Die Schülerinnen und Schüler können Energieformen und -umwandlungen analysieren.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie",
+      "thema": "Energieformen und Energieumwandlungen"
+     }
+    ]
+   },
+   {
+    "code": "NT.4.2",
+    "ich": "Ich kann Herausforderungen zu Speicherung, Bereitstellung und Transport von Energie beschreiben und reflektieren.",
+    "lp": "Die Schülerinnen und Schüler können Herausforderungen zu Speicherung, Bereitstellung und Transport von Energie beschreiben und reflektieren.",
+    "tags": [
+     {
+      "fach": "Physik, (Chemie, Biologie)",
+      "thema": "Speicherung, Bereitstellung und Transport von Energie"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 5,
+  "titel": "Mechanische und elektrische Phänomene untersuchen",
+  "komp": [
+   {
+    "code": "NT.5.1",
+    "ich": "Ich kann Bewegungen und Wirkungen von Kräften analysieren.",
+    "lp": "Die Schülerinnen und Schüler können Bewegungen und Wirkungen von Kräften analysieren.",
+    "tags": [
+     {
+      "fach": "Physik",
+      "thema": "Bewegungen und Kräfte"
+     }
+    ]
+   },
+   {
+    "code": "NT.5.2",
+    "ich": "Ich kann Grundlagen der Elektrik verstehen und anwenden.",
+    "lp": "Die Schülerinnen und Schüler können Grundlagen der Elektrik verstehen und anwenden.",
+    "tags": [
+     {
+      "fach": "Physik",
+      "thema": "Grundlagen der Elektrik"
+     }
+    ]
+   },
+   {
+    "code": "NT.5.3",
+    "ich": "Ich kann elektrische und elektronische Schaltungen untersuchen und analysieren.",
+    "lp": "Die Schülerinnen und Schüler können elektrische und elektronische Schaltungen untersuchen und analysieren.",
+    "tags": [
+     {
+      "fach": "Physik, Technik",
+      "thema": "Elektrische und elektronische Schaltungen"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 6,
+  "titel": "Sinne und Signale erforschen",
+  "komp": [
+   {
+    "code": "NT.6.1",
+    "ich": "Ich kann Sinnesreize und deren Verarbeitung beschreiben, analysieren und beurteilen.",
+    "lp": "Die Schülerinnen und Schüler können Sinnesreize und deren Verarbeitung beschreiben, analysieren und beurteilen.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Sinnesorgane und Reizweiterleitung"
+     }
+    ]
+   },
+   {
+    "code": "NT.6.2",
+    "ich": "Ich kann Hören und Sehen analysieren.",
+    "lp": "Die Schülerinnen und Schüler können Hören und Sehen analysieren.",
+    "tags": [
+     {
+      "fach": "Biologie, Physik",
+      "thema": "Akustik und Hören, Optik und Sehen"
+     }
+    ]
+   },
+   {
+    "code": "NT.6.3",
+    "ich": "Ich kann optische Phänomene untersuchen.",
+    "lp": "Die Schülerinnen und Schüler können optische Phänomene untersuchen.",
+    "tags": [
+     {
+      "fach": "Physik",
+      "thema": "Optik"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 7,
+  "titel": "Körperfunktionen verstehen",
+  "komp": [
+   {
+    "code": "NT.7.1",
+    "ich": "Ich kann Aspekte der Anatomie und Physiologie des Körpers erklären.",
+    "lp": "Die Schülerinnen und Schüler können Aspekte der Anatomie und Physiologie des Körpers erklären.",
+    "tags": [
+     {
+      "fach": "Biologie, (Chemie, Physik)",
+      "thema": "Anatomie und Physiologie"
+     }
+    ]
+   },
+   {
+    "code": "NT.7.2",
+    "ich": "Ich kann Stoffwechselvorgänge analysieren und Verantwortung für den eigenen Körper übernehmen.",
+    "lp": "Die Schülerinnen und Schüler können Stoffwechselvorgänge analysieren und Verantwortung für den eigenen Körper übernehmen.",
+    "tags": [
+     {
+      "fach": "Biologie, (Chemie, Physik)",
+      "thema": "Stoffwechselvorgänge"
+     }
+    ]
+   },
+   {
+    "code": "NT.7.3",
+    "ich": "Ich verfüge über ein altersgemässes Grundwissen über die menschliche Fortpflanzung, sexuell übertragbare Krankheiten und Möglichkeiten zur Verhütung.",
+    "lp": "Die Schülerinnen und Schüler verfügen über ein altersgemässes Grundwissen über die menschliche Fortpflanzung, sexuell übertragbare Krankheiten und Möglichkeiten zur Verhütung.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Menschliche Fortpflanzung"
+     }
+    ]
+   },
+   {
+    "code": "NT.7.4",
+    "ich": "Ich kann Massnahmen gegen häufige Erkrankungen beurteilen.",
+    "lp": "Die Schülerinnen und Schüler können Massnahmen gegen häufige Erkrankungen beurteilen.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Krankheit und Genese"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 8,
+  "titel": "Fortpflanzung und Entwicklung analysieren",
+  "komp": [
+   {
+    "code": "NT.8.1",
+    "ich": "Ich kann Artenvielfalt in Beziehung zur Evolutionstheorie setzen.",
+    "lp": "Die Schülerinnen und Schüler können Artenvielfalt in Beziehung zur Evolutionstheorie setzen.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Evolutionstheorie"
+     }
+    ]
+   },
+   {
+    "code": "NT.8.2",
+    "ich": "Ich kann Wachstum und Entwicklung von Organismen erforschen und in Grundzügen erklären.",
+    "lp": "Die Schülerinnen und Schüler können Wachstum und Entwicklung von Organismen erforschen und in Grundzügen erklären.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Wachstum und Entwicklung"
+     }
+    ]
+   },
+   {
+    "code": "NT.8.3",
+    "ich": "Ich kann Grundlagen der Genetik analysieren und erklären.",
+    "lp": "Die Schülerinnen und Schüler können Grundlagen der Genetik analysieren und erklären.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Genetik und Gentechnik"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "nr": 9,
+  "titel": "Ökosysteme erkunden",
+  "komp": [
+   {
+    "code": "NT.9.1",
+    "ich": "Ich kann aquatische Ökosysteme untersuchen und beurteilen.",
+    "lp": "Die Schülerinnen und Schüler können aquatische Ökosysteme untersuchen und beurteilen.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie",
+      "thema": "Gewässerforschung"
+     }
+    ]
+   },
+   {
+    "code": "NT.9.2",
+    "ich": "Ich kann Wechselwirkungen innerhalb und zwischen terrestrischen Ökosystemen erkennen und charakterisieren.",
+    "lp": "Die Schülerinnen und Schüler können Wechselwirkungen innerhalb und zwischen terrestrischen Ökosystemen erkennen und charakterisieren.",
+    "tags": [
+     {
+      "fach": "Physik, Chemie, Biologie",
+      "thema": "Ökosysteme"
+     }
+    ]
+   },
+   {
+    "code": "NT.9.3",
+    "ich": "Ich kann Einflüsse des Menschen auf regionale Ökosysteme erkennen und einschätzen.",
+    "lp": "Die Schülerinnen und Schüler können Einflüsse des Menschen auf regionale Ökosysteme erkennen und einschätzen.",
+    "tags": [
+     {
+      "fach": "Biologie",
+      "thema": "Naturnutzung und Naturschutz"
+     }
+    ]
+   }
+  ]
+ }
+];
+// Welche Lern-Apps Teile der Kompetenz üben (Zuordnung ohne Anspruch auf Vollständigkeit)
+const APPS = [
+  { title: '7_2 Den Körper analysieren', href: '7_2_Den_Koerper_analysieren.html', komp: ['NT.7.1', 'NT.7.2', 'NT.7.3'] },
+  { title: '7_6 Arbeiten im Labor', href: '7_6_Arbeiten_im_Labor.html', komp: ['NT.2.1', 'NT.2.2', 'NT.3.1'] },
+  { title: '9_8 Stoffkreisläufe erkunden', href: '9_8_Stoffkreislaeufe_erkunden.html', komp: ['NT.3.3', 'NT.9.3', 'NT.1.3'] },
+  { title: '9_7 Land-Ökosysteme erforschen', href: '9_7_Land_Oekosysteme_erforschen.html', komp: ['NT.9.1', 'NT.9.2', 'NT.9.3'] },
+  { title: '9_6 Evolution nachvollziehen', href: '9_6_Evolution_nachvollziehen.html', komp: ['NT.8.1', 'NT.8.2', 'NT.9.2'] },
+  { title: '9_5 Genetik und Gentechnik verstehen', href: '9_5_Genetik_und_Gentechnik_verstehen.html', komp: ['NT.8.1', 'NT.8.2', 'NT.8.3'] },
+  { title: '9_4 Energie und Leistung erfassen', href: '9_4_Energie_und_Leistung_erfassen.html', komp: ['NT.5.1', 'NT.5.2', 'NT.3.3'] },
+  { title: '9_3 Elektronische Schaltungen untersuchen', href: '9_3_Elektronische_Schaltungen_untersuchen.html', komp: ['NT.5.2', 'NT.1.2'] },
+  { title: '9_2 Atommodelle nutzen', href: '9_2_Atommodelle_nutzen.html', komp: ['NT.3.1', 'NT.3.2', 'NT.4.1'] },
+  { title: '7_4 Bewegungen erkunden', href: '7_4_Bewegungen_erkunden.html', komp: ['NT.5.1'] },
+  { title: '9_1 Optische Phänomene erkunden', href: '9_1_Optische_Phaenomene_erkunden.html', komp: ['NT.6.1', 'NT.6.2', 'NT.6.3'] },
+  { title: '8_4 Chemische Reaktionen erforschen', href: '8_4_Chemische_Reaktionen_erforschen.html', komp: ['NT.2.2', 'NT.3.1', 'NT.3.2', 'NT.4.1'] },
+  { title: '8_3 Funktionen des Körpers analysieren', href: '8_3_Funktionen_des_Koerpers_analysieren.html', komp: ['NT.7.2', 'NT.7.4', 'NT.2.2', 'NT.3.1'] },
+  { title: '8_2 Gewässer-Ökosysteme erforschen', href: '8_2_Gewaesser_Oekosysteme_erforschen.html', komp: ['NT.9.1', 'NT.9.3', 'NT.3.3'] },
+  { title: '8_5 Kräfte, Arbeit und Leistung erforschen', href: '8_5_Kraefte_Arbeit_und_Leistung_erforschen.html', komp: ['NT.5.1', 'NT.4.1'] },
+  { title: '7_3 Reize und Sinne untersuchen', href: '7_3_Reize_und_Sinne_untersuchen.html', komp: ['NT.6.1', 'NT.6.2', 'NT.6.3'] },
+  { title: '8_1 Stromkreise untersuchen', href: '8_1_Stromkreise_untersuchen.html', komp: ['NT.5.2', 'NT.1.2', 'NT.4.1'] },
+  { title: '7_7 Chemische Reaktionen untersuchen', href: '7_7_Chemische_Reaktionen_untersuchen.html', komp: ['NT.2.2', 'NT.3.1', 'NT.3.2', 'NT.4.1'] },
+  { title: '7_5 Energie erkunden', href: '7_5_Energie_erkunden.html', komp: ['NT.4.1', 'NT.4.2'] },
+  { title: '7_1 Naturwissenschaften erkunden', href: '7_1_Naturwissenschaften_erkunden.html', komp: ['NT.1.1', 'NT.1.2', 'NT.8.2'] }
+];
+// Reihen aus der Jahresplanung, für die es noch keine Lern-App gibt
+const PLAN = [];
+const BCOL = ['var(--st-1)', 'var(--st-2)', 'var(--st-3)', 'var(--st-4)', 'var(--st-5)', 'var(--st-6)', 'var(--pop-pink)', 'var(--pop-cyan)', 'var(--pop-green)'];
+const AMP = { r: 'Noch nicht', y: 'Fast', g: 'Sicher' };
+const KEY = 'halingen-nut-karte-v1';
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const $id = id => document.getElementById(id);
+const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const total = DATA.reduce((a, b) => a + b.komp.length, 0);
 
-/* ---------- Backend (optional): Klassenwertung über Supabase ---------- */
-const CFG = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
-const BE = { client: null, board: null, boardAt: 0, loading: false, status: '', chBoard: null, chStatus: '', pushing: false, pushAgain: false };
-function beInit() {
-  try {
-    if (CFG.supabaseUrl && CFG.supabaseKey && window.supabase && window.supabase.createClient) {
-      BE.client = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true } });
-    }
-  } catch (e) { BE.client = null; }
-}
-const weekKey = () => Math.floor((dayIdx() + 3) / 7); // Wochen beginnen am Montag
-// Schulcode aus config.js: trennt die Wertung der Schule von anderen Schulen. Leer = keine Schulwertung.
-const schoolCode = () => { const s = String(CFG.schoolCode || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20); return s.length >= 3 ? s : ''; };
-// Klassen oder Gruppen, die im Duell verglichen werden (leer = alle Klassen der Schule)
-const duelArr = () => { const a = String(ui.duelInput || '').split(/[,;\s]+/).map(x => x.toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20)).filter(x => x.length >= 3); return a.length ? a.slice(0, 8) : null; };
-let authP = null;
-function ensureAuth() {
-  if (!authP) {
-    authP = (async () => {
-      const s = await BE.client.auth.getSession();
-      if (s && s.data && s.data.session) return;
-      const r = await BE.client.auth.signInAnonymously();
-      if (r.error) throw r.error;
-    })().catch(e => { authP = null; throw e; });
-  }
-  return authP;
-}
-async function rpc(name, args) {
-  await ensureAuth();
-  const r = await BE.client.rpc(name, args);
-  if (r.error) throw r.error;
-  return r.data;
-}
-const wait = ms => new Promise(res => setTimeout(res, ms));
+let memoryOnly = false;
+function load() { try { const r = localStorage.getItem(KEY); if (r) return Object.assign({ amp: {}, filter: 'all', name: '', klasse: '' }, JSON.parse(r)); } catch (e) { /* ohne Speicher */ } return { amp: {}, filter: 'all', name: '', klasse: '' }; }
+let state = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { memoryOnly = true; } }
+let confirmReset = false;
+const celebrated = new Set();
 
-async function pushProgress() {
-  if (!BE.client || !state.classCode) return;
-  if (BE.pushing) { BE.pushAgain = true; return; }
-  BE.pushing = true;
-  try {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const wk = weekKey();
-        await rpc('submit_progress', {
-          p_topic: TOPIC.id, p_class: state.classCode, p_nick: state.nick, p_week: wk,
-          p_week_xp: state.weekKey === wk ? state.weekXp : 0,
-          p_total_xp: state.xp, p_level: levelOf(state.xp) + 1, p_school: schoolCode()
-        });
-        BE.status = ''; BE.boardAt = 0; BE.schoolAt = 0; BE.classesAt = 0;
-        break;
-      } catch (e) {
-        if (attempt === 0 && /zu schnell/.test(String(e && e.message))) { await wait(3500); continue; }
-        BE.status = 'Dein Punktestand konnte gerade nicht an die Klasse gesendet werden.';
-        break;
-      }
-    }
-  } finally {
-    BE.pushing = false;
-    if (BE.pushAgain) { BE.pushAgain = false; pushProgress(); }
-  }
-  paintBoard();
-}
-async function loadBoard(force) {
-  if (!BE.client || !state.classCode || BE.loading) return;
-  if (!force && BE.boardAt && Date.now() - BE.boardAt < 20000) { paintBoard(); return; }
-  BE.loading = true;
-  try {
-    const rows = await rpc('leaderboard', { p_topic: TOPIC.id, p_class: state.classCode, p_week: weekKey() });
-    BE.board = { rows, n: rows.length ? rows[0].n_players : 0, total: rows.length ? rows[0].total_week_xp : 0 };
-    BE.boardAt = Date.now(); BE.status = '';
-  } catch (e) { BE.status = 'Die Rangliste konnte gerade nicht geladen werden.'; }
-  BE.loading = false;
-  paintBoard();
-}
-async function loadSchool(force) {
-  if (!BE.client || !schoolCode() || !state.classCode || BE.loadingS) return;
-  if (!force && BE.schoolAt && Date.now() - BE.schoolAt < 20000) { paintBoard(); return; }
-  BE.loadingS = true;
-  try { BE.school = await rpc('school_leaderboard', { p_topic: TOPIC.id, p_school: schoolCode(), p_week: weekKey() }); BE.schoolAt = Date.now(); BE.status = ''; }
-  catch (e) { BE.status = 'Die Schulwertung konnte gerade nicht geladen werden.'; }
-  BE.loadingS = false;
-  paintBoard();
-}
-async function loadClasses(force) {
-  if (!BE.client || !schoolCode() || !state.classCode || BE.loadingC) return;
-  if (!force && BE.classesAt && Date.now() - BE.classesAt < 20000) { paintBoard(); return; }
-  BE.loadingC = true;
-  try { BE.classes = await rpc('class_ranking', { p_topic: TOPIC.id, p_school: schoolCode(), p_week: weekKey(), p_codes: duelArr() }); BE.classesAt = Date.now(); BE.status = ''; }
-  catch (e) { BE.status = 'Der Klassenvergleich konnte gerade nicht geladen werden.'; }
-  BE.loadingC = false;
-  paintBoard();
-}
-async function afterChallenge(ch) {
-  if (!BE.client || !state.classCode) return;
-  BE.chBoard = null; BE.chStatus = ''; BE.chClasses = null; BE.chClsStatus = '';
-  try {
-    if (!ch.prev) await rpc('submit_challenge', { p_topic: TOPIC.id, p_class: state.classCode, p_code: ch.code, p_nick: state.nick, p_correct: ch.c, p_seconds: Math.max(8, ch.t), p_school: schoolCode() });
-    BE.chBoard = await rpc('challenge_ranking', { p_topic: TOPIC.id, p_class: state.classCode, p_code: ch.code });
-  } catch (e) { BE.chStatus = 'Die Rangliste zu dieser Challenge konnte gerade nicht geladen werden.'; }
-  paintChBoard();
-  if (schoolCode()) {
-    try { BE.chClasses = await rpc('class_challenge_ranking', { p_topic: TOPIC.id, p_school: schoolCode(), p_code: ch.code, p_codes: duelArr() }); BE.chClsStatus = ''; }
-    catch (e) { BE.chClsStatus = 'Der Klassenvergleich konnte gerade nicht geladen werden.'; }
-    paintChBoard();
-  }
-}
-async function joinClass() {
-  const el = $id('clscode');
-  const code = normCode(el ? el.value : '');
-  if (code.length < 3) { ui.clsErr = 'Der Klassencode braucht mindestens 3 Zeichen.'; render('keep'); return; }
-  ui.clsErr = '';
-  state.classCode = code; save();
-  BE.board = null; BE.boardAt = Date.now();
-  render('keep');
-  await pushProgress();
-  loadBoard(true);
-}
-async function leaveClass(wipe) {
-  if (BE.client && (state.classCode || wipe)) { try { await rpc('leave_class', { p_topic: TOPIC.id }); } catch (e) { /* offline: Zeile bleibt, Lehrperson kann sie löschen */ } }
-  state.classCode = ''; save();
-  BE.board = null; BE.boardAt = 0; BE.school = null; BE.schoolAt = 0; BE.classes = null; BE.classesAt = 0; ui.bt = 'class';
-}
-
-function boardHtml() {
-  const b = BE.board;
-  if (!b) return '<p class="small">Rangliste wird geladen …</p>';
-  if (!b.rows.length) return '<p class="small">Diese Woche hat noch niemand Punkte. Spiele eine Runde, dann erscheinst du hier.</p>';
-  const per = Number(CFG.weeklyGoalPerPlayer) || 100;
-  const goal = Math.max(per, b.n * per), pct = Math.min(100, Math.round(b.total / goal * 100));
-  let prev = 0;
-  const rows = b.rows.map(r => {
-    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
-    prev = r.rank;
-    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}</span><span class="mono">${r.week_xp} XP</span></li>`;
-  }).join('');
-  const me = b.rows.find(r => r.is_me);
-  return `<ol class="board">${rows}</ol>
-    <p class="small">${me ? `Du bist Platz ${me.rank} von ${b.n}.` : ''} Gezeigt werden die Top 5 und dein eigener Platz. Die Wertung gilt von Montag bis Sonntag.</p>
-    <div class="goal"><div class="small">Klassenziel diese Woche: <b class="mono">${b.total} von ${goal} XP</b></div>
-    <div class="xpbar light" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Klassenziel"><div style="width:${pct}%"></div></div></div>`;
-}
-function chBoardHtml() {
-  if (BE.chStatus) return `<p class="small">${BE.chStatus}</p>`;
-  if (!BE.chBoard) return '<p class="small">Rangliste wird geladen …</p>';
-  const rows = BE.chBoard, n = rows.length ? rows[0].n_players : 0;
-  let prev = 0;
-  const li = rows.map(r => {
-    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
-    prev = r.rank;
-    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}</span><span class="mono">${r.correct}/6 \u00B7 ${r.seconds} s</span></li>`;
-  }).join('');
-  return `<div class="tag">Rangliste dieser Klasse (${n} ${n === 1 ? 'Ergebnis' : 'Ergebnisse'})</div><ol class="board">${li}</ol>`;
-}
-const people = n => n + (n === 1 ? ' Person' : ' Personen');
-function schoolHtml() {
-  const rows = BE.school;
-  if (!rows) return '<p class="small">Schulwertung wird geladen …</p>';
-  if (!rows.length) return '<p class="small">Diese Woche hat in der Schule noch niemand Punkte.</p>';
-  const n = rows[0].n_players; let prev = 0;
-  const li = rows.map(r => {
-    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
-    prev = r.rank;
-    return gap + `<li class="${r.is_me ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.nick)}${r.is_me ? ' (du)' : ''}<small>${esc(r.class_code)}</small></span><span class="mono">${r.week_xp} XP</span></li>`;
-  }).join('');
-  const me = rows.find(r => r.is_me);
-  return `<ol class="board">${li}</ol><p class="small">${me ? `Du bist Platz ${me.rank} von ${n}. ` : ''}Schulinterne Wertung: Top 10 und dein Platz. Gezeigt werden nur Zufallsnamen und der Klassencode.</p>`;
-}
-function classesHtml() {
-  const rows = BE.classes;
-  const form = `<div class="ansrow chrow"><input id="duelcodes" class="numin" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="80" placeholder="Duell: z. B. KL-7A, KL-7B" aria-label="Klassen oder Gruppen für das Duell" value="${esc(ui.duelInput || '')}"><button class="btn sm" data-act="duelgo">Vergleichen</button></div>
-    <p class="small">Leer lassen: alle Klassen und Gruppen der Schule. Oder gib zwei bis acht Klassencodes ein.</p>`;
-  if (!rows) return form + '<p class="small">Klassenvergleich wird geladen …</p>';
-  if (!rows.length) return form + '<p class="small">Für diese Auswahl gibt es diese Woche noch keine Punkte.</p>';
-  let prev = 0;
-  const li = rows.map(r => {
-    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
-    prev = r.rank;
-    return gap + `<li class="${r.is_mine ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.class_code)}${r.is_mine ? ' (deine Klasse)' : ''}<small>${people(r.n_players)}${r.n_players < 3 ? ' \u00B7 wenige Teilnehmende' : ''}</small></span><span class="mono">${fmt(Number(r.avg_xp), 1)} XP pro Person</span></li>`;
-  }).join('');
-  return form + `<ol class="board">${li}</ol><p class="small">Verglichen werden die Wochenpunkte pro Person. So haben grosse und kleine Klassen oder Gruppen die gleiche Chance.</p>`;
-}
-function chClsHtml() {
-  if (!BE.client || !schoolCode() || !state.classCode) return '';
-  if (BE.chClsStatus) return `<p class="small">${BE.chClsStatus}</p>`;
-  if (!BE.chClasses) return '<p class="small">Klassenvergleich wird geladen …</p>';
-  const rows = BE.chClasses;
-  if (!rows.length) return '';
-  let prev = 0;
-  const li = rows.map(r => {
-    const gap = prev && r.rank > prev + 1 ? '<li class="gap" aria-hidden="true">\u2026</li>' : '';
-    prev = r.rank;
-    return gap + `<li class="${r.is_mine ? 'me' : ''}"><span class="rk mono">${r.rank}</span><span class="nm">${esc(r.class_code)}${r.is_mine ? ' (deine Klasse)' : ''}<small>${people(r.n_players)}</small></span><span class="mono">${fmt(Number(r.avg_correct), 1)}/6 \u00B7 ${fmt(Number(r.avg_seconds), 0)} s</span></li>`;
-  }).join('');
-  return `<div class="tag">Klassenduell bei dieser Challenge</div><ol class="board">${li}</ol><p class="small">Verglichen werden die Durchschnitte pro Person. Spielen mehrere Klassen denselben Code, siehst du, wer vorn liegt.</p>`;
-}
-function boardTabHtml() { return !schoolCode() ? boardHtml() : ui.bt === 'school' ? schoolHtml() : ui.bt === 'duel' ? classesHtml() : boardHtml(); }
-function tabsHtml() {
-  if (!schoolCode()) return '';
-  const t = [['class', 'Klasse'], ['school', 'Schule'], ['duel', 'Klassenduell']];
-  return `<div class="seg3" role="group" aria-label="Wertung">${t.map(x => `<button class="btn sm${(ui.bt || 'class') === x[0] ? ' on' : ''}" data-act="bt" data-t="${x[0]}">${x[1]}</button>`).join('')}</div>`;
-}
-function paintBoard() {
-  const el = $id('board'); if (el) el.innerHTML = boardTabHtml();
-  const st = $id('bestatus'); if (st) st.textContent = BE.status;
-}
-function paintChBoard() {
-  const el = $id('chboard'); if (el) el.innerHTML = chBoardHtml();
-  const ec = $id('chcls'); if (ec) ec.innerHTML = chClsHtml();
-}
-function classCard() {
-  if (!BE.client) return '';
-  if (!state.classCode) {
-    return `<article class="card clsc" style="--i:7">
-      <div class="tag">Meine Klasse</div>
-      <h3>Klassenwertung</h3>
-      <p class="small">Gib den Klassencode ein, den du von deiner Lehrperson bekommst. Dann siehst du die Wochenwertung deiner Klasse. Gespeichert werden nur dein Zufallsname und dein Punktestand.</p>
-      <div class="ansrow chrow"><input id="clscode" class="numin mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="Klassencode" aria-label="Klassencode"></div>
-      ${ui.clsErr ? `<p class="errtxt" role="alert">${ui.clsErr}</p>` : ''}
-      <button class="btn btn-primary block" data-act="joinclass">Klasse beitreten</button>
-    </article>`;
-  }
-  return `<article class="card clsc" style="--i:7">
-      <div class="tag">Meine Klasse</div>
-      <h3>Klasse ${esc(state.classCode)}</h3>
-      ${tabsHtml()}
-      <div id="board">${boardTabHtml()}</div>
-      <p class="errtxt" id="bestatus" role="status">${BE.status || ''}</p>
-      <div class="btnrow"><button class="btn sm" data-act="refreshboard">Aktualisieren</button><button class="btn sm" data-act="leaveclass">Klasse verlassen</button></div>
-      <p class="small">Beim Verlassen werden deine Daten auf dem Server gelöscht.</p>
-    </article>`;
-}
-
-
-/* ---------- Maskottchen Watti und Lernhilfen ---------- */
-const scStyle = nr => `--sc:var(--st-${nr})`;
 function watti(lvl, mood, cls) {
   return `<div class="watti ${cls || ''}" data-mood="${mood || 'happy'}" style="--lvl:${Math.max(14, Math.min(100, Math.round(lvl)))}%" aria-hidden="true"><div class="cap"></div><div class="body"><div class="fill"></div><div class="face"><div class="eyes"><i class="eye"></i><i class="eye"></i></div><b class="mouth"></b></div></div></div>`;
-}
-const WATTI_TIPS = TOPIC.tips.concat(['Erst lernen, dann üben. Das lohnt sich.', 'Fehler sind okay. Sie kommen wieder, bis es sitzt.', 'Eine Runde pro Tag hält deine Serie am Laufen.', 'Tipp: Schau bei Aufgaben zuerst, welche Einheit gesucht ist.']);
-let tipI = 0;
-function introCard() {
-  return `<article class="card intro" style="--i:0"><div class="tag">So geht's</div>
-    <div class="steps3"><div class="step3"><b>1</b><span>Lernen</span><small>Karten und Experimente</small></div><div class="step3"><b>2</b><span>Üben</span><small>Aufgaben mit Tipps</small></div><div class="step3"><b>3</b><span>Challenge</span><small>Gleiche Fragen für alle</small></div></div>
-    <button class="btn sm" data-act="introdone">Verstanden</button></article>`;
-}
-function workedHtml(w, shown) {
-  const steps = w.steps.map((s, i) => `<li class="${i <= shown ? '' : 'hid'}"><div><div class="wt">${s[0]}</div><div class="wm mono">${s[1]}</div></div></li>`).join('');
-  return `<div class="worked"><div class="wgiven">${w.given}</div><ol class="wsteps">${steps}</ol><button class="btn sm" data-act="wstep" ${shown >= w.steps.length - 1 ? 'disabled' : ''}>${shown >= w.steps.length - 1 ? 'Das war es' : 'Nächster Schritt'}</button></div>`;
-}
-function openExplain() {
-  const q = R.queue[R.i], el = $id('ans');
-  if (el) q.input = el.value;
-  const st = stationOf(q.tpl), idx = st.lesson.findIndex(c => c.h === q.tpl.learn);
-  L = { st, i: Math.max(0, idx), dir: 1, shown: {}, sel: {}, wk: {}, fromRound: true };
-  ui.screen = 'lesson'; ui.formulas = false;
-  render();
-}
-
-/* ---------- Lernstand als verschlüsselter QR-Code ---------- */
-const qrAvailable = () => !!(CFG.teacherKey && window.qrcode && window.crypto && window.crypto.subtle);
-function lernstandPayload() {
-  const wkNow = Math.floor((dayIdx() + 3) / 7);
-  return {
-    v: 1, tp: TOPIC.id, i: Math.floor(Date.now() / 1000), id: LQ.randomId(8),
-    n: state.nick, r: (state.realName || '').trim(), k: state.classCode || '',
-    x: state.xp, w: state.weekKey === wkNow ? state.weekXp : 0, l: levelOf(state.xp) + 1, ro: state.rounds, st: streakNow(),
-    s: STATIONS.map(st => (state.stars[st.id] === undefined ? '-' : String(state.stars[st.id]))).join(''),
-    ls: STATIONS.map(st => (state.lessons[st.id] ? '1' : '0')).join(''),
-    ch: Object.keys(state.challenges).slice(-3).map(k => [k, state.challenges[k].c, state.challenges[k].t])
-  };
-}
-async function showQr() {
-  ui.screen = 'qr'; ui.qr = { state: 'loading' };
-  render();
-  try {
-    const token = await LQ.encrypt(CFG.teacherKey, lernstandPayload());
-    const q = window.qrcode(0, 'M'); q.addData(token); q.make();
-    ui.qr = { state: 'ok', svg: q.createSvgTag({ cellSize: 4, margin: 4, scalable: true }), until: Date.now() + 600000 };
-  } catch (e) { ui.qr = { state: 'err' }; }
-  if (ui.screen === 'qr') render('keep');
-}
-function qrCard() {
-  if (!qrAvailable()) return '';
-  return `<article class="card qrc" style="--i:9">
-      <div class="tag">Mein Lernstand</div>
-      <h3>QR-Code für die Lehrperson</h3>
-      <p class="small">Dein Punktestand wird verschlüsselt in einen QR-Code gepackt. Nur die Prüf-App deiner Lehrperson kann ihn lesen. Es wird nichts hochgeladen.</p>
-      <div class="ansrow chrow"><input id="realname" class="numin txtin" type="text" autocomplete="off" maxlength="30" placeholder="Dein Name (freiwillig)" value="${esc(state.realName || '')}" aria-label="Dein Name für die Lehrperson"></div>
-      <p class="small">Der Name steht nur im verschlüsselten Code, nirgends sonst.</p>
-      <button class="btn btn-primary block" data-act="showqr">QR-Code anzeigen</button>
-    </article>`;
-}
-function viewQr() {
-  const q = ui.qr || { state: 'loading' };
-  const body = q.state === 'ok' ? `<div class="qrbox" id="qrbox" role="img" aria-label="QR-Code mit deinem verschlüsselten Lernstand">${q.svg}</div><p class="countdown">Gültig noch <b class="mono" id="qrleft">10:00</b></p>`
-    : q.state === 'err' ? '<p class="errtxt" role="alert">Der Code konnte nicht erzeugt werden. Dein Browser unterstützt die Verschlüsselung vielleicht nicht.</p>' : '<p class="small">Code wird erzeugt …</p>';
-  return `
-  <main class="wrap qrscreen">
-    <section class="card">
-      <div class="tag">Mein Lernstand</div>
-      <h2 class="sumh">QR-Code</h2>
-      ${body}
-      <p class="small">Zeige den Code deiner Lehrperson. Er ist verschlüsselt: Nur die Prüf-App deiner Lehrperson kann ihn lesen. Es wird nichts hochgeladen. Wenn der Code abläuft, erzeugst du einfach einen neuen.</p>
-    </section>
-    <button class="btn btn-primary block" data-act="showqr">Neuen Code erzeugen</button>
-    <button class="btn block" data-act="home">Zurück</button>
-  </main>`;
-}
-
-/* ---------- Lektion ---------- */
-let L = null;
-function startLesson(id) {
-  const st = STATIONS.find(s => s.id === id);
-  L = { st, i: 0, dir: 1, shown: {}, sel: {}, wk: {}, fromRound: false };
-  ui.screen = 'lesson'; ui.formulas = false;
-  render();
-}
-function lessonGo(d) {
-  const n = L.st.lesson.length;
-  L.i = Math.max(0, Math.min(n - 1, L.i + d)); L.dir = d;
-  render();
-}
-function finishLesson() {
-  const id = L.st.id, first = !state.lessons[id], lvB = levelOf(state.xp);
-  let gain = 0;
-  if (first) { state.lessons[id] = true; gain = 15; bumpXp(gain); touchStreak(); save(); pushProgress(); }
-  L.gain = gain; L.levelUp = levelOf(state.xp) > lvB;
-  L.newTrophies = checkTrophies(); save();
-  ui.screen = 'lessondone';
-  render();
-}
-
-/* ---------- Challenge ---------- */
-const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0, 20);
-function startChallenge() {
-  const el = $id('chcode');
-  const code = normCode(el ? el.value : ui.chCode);
-  ui.chCode = code;
-  if (code.length < 3) { ui.chErr = 'Der Code braucht mindestens 3 Zeichen, zum Beispiel 4-FUNKE.'; render('keep'); return; }
-  ui.chErr = '';
-  startRound('challenge', code);
-}
-
-/* ---------- Animationen ---------- */
-function countUp(el, to, pre, suf) {
-  tween(0, to, 900, v => { el.textContent = pre + Math.round(v) + suf; });
 }
 function confetti(host) {
   if (!host || reduced()) return;
   const cols = ['var(--pop-yellow)', 'var(--pop-pink)', 'var(--pop-cyan)', 'var(--pop-green)', 'var(--primary)'];
-  const box = document.createElement('div');
-  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < 44; i++) {
-    const s = document.createElement('span');
-    const a = Math.random() * Math.PI * 2, d = 80 + Math.random() * 140;
-    s.style.setProperty('--dx', Math.cos(a) * d + 'px');
-    s.style.setProperty('--dy', (Math.sin(a) * d - 60) + 'px');
-    s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
-    s.style.background = cols[i % cols.length];
-    s.style.animationDelay = (Math.random() * 120) + 'ms';
-    box.appendChild(s);
+  const box = document.createElement('div'); box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('span'), a = Math.random() * Math.PI * 2, d = 80 + Math.random() * 140;
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', (Math.sin(a) * d - 60) + 'px');
+    s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg'); s.style.background = cols[i % cols.length];
+    s.style.animationDelay = (Math.random() * 120) + 'ms'; box.appendChild(s);
   }
-  host.appendChild(box);
-  setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 1700);
+  host.appendChild(box); setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 1700);
+}
+const countOf = v => DATA.reduce((a, b) => a + b.komp.filter(k => state.amp[k.code] === v).length, 0);
+
+function kompHtml(k) {
+  const apps = APPS.filter(a => a.komp.includes(k.code));
+  const plan = PLAN.filter(p => p.komp.includes(k.code));
+  const chips = apps.map(a => `<a class="appchip" href="${a.href}">Üben mit der App «${a.title}»</a>`).join('') + plan.map(p => `<span class="appchip plan">Reihe «${p.title}» in der Jahresplanung, App folgt</span>`).join('');
+  const v = state.amp[k.code] || '';
+  return `<li class="kp${v ? ' ' + v : ''}${apps.length ? ' hasapp' : ''}" data-code="${k.code}">
+    <div class="kptop"><span class="kcode mono">${k.code}</span><div class="ktags">${k.tags.map(t => `<span class="ktag">${esc(t.fach)}: ${esc(t.thema)}</span>`).join('')}</div></div>
+    <p class="ktext">${esc(k.ich)}</p>
+    ${chips ? `<div class="kapps">${chips}</div>` : ''}
+    <div class="amps" role="group" aria-label="Selbsteinschätzung ${k.code}">${['r', 'y', 'g'].map(a => `<button class="amp ${a}" data-act="amp" data-c="${k.code}" data-v="${a}" aria-pressed="${v === a}"><span class="dotc" aria-hidden="true"></span>${AMP[a]}</button>`).join('')}</div>
+    <details class="lptext"><summary>Text aus dem Lehrplan</summary><p>${esc(k.lp)}</p></details>
+  </li>`;
 }
 
-/* ---------- Ansichten ---------- */
-function viewHome() {
-  const lv = levelOf(state.xp);
-  const cur = LEVELS[lv], nxt = LEVELS[lv + 1];
-  const pct = nxt ? Math.round((state.xp - cur.xp) / (nxt.xp - cur.xp) * 100) : 100;
-  const sn = streakNow();
-  const diff = state.lastDay === null ? null : dayIdx() - state.lastDay;
-  let streakNote = 'Eine Runde pro Tag hält deine Serie am Laufen. Ein freier Tag ist erlaubt.';
-  if (sn > 0 && diff >= 1) streakNote = diff === 1 ? 'Mach heute eine Runde, dann läuft deine Serie weiter.' : 'Letzte Chance: Mach heute eine Runde, sonst startet die Serie neu.';
-  if (sn === 0 && state.lastDay !== null) streakNote = 'Die Serie ist unterbrochen. Mit einer Runde startest du neu.';
-
-  const due = dueCount();
-  let nudge = null;
-  for (const s0 of STATIONS) {
-    if (!state.lessons[s0.id]) { nudge = 'learn:' + s0.id; break; }
-    if (state.stars[s0.id] === undefined) { nudge = 'start:' + s0.id; break; }
-  }
-  const sparks = [['8%', '30%', '16px', 'var(--pop-pink)', '8s'], ['70%', '12%', '10px', 'var(--pop-yellow)', '10s'], ['90%', '60%', '18px', 'var(--pop-cyan)', '9s'], ['40%', '78%', '12px', 'var(--pop-green)', '11s'], ['22%', '8%', '9px', 'var(--pop-yellow)', '7s'], ['58%', '45%', '14px', 'var(--pop-pink)', '12s']]
-    .map(p => `<span class="spark" aria-hidden="true" style="--x:${p[0]};--y:${p[1]};--s:${p[2]};--c:${p[3]};--t:${p[4]}"></span>`).join('');
-  const cards = STATIONS.map((s, idx) => {
-    const open = true;
-    const canPractice = stationUnlocked(s) || !!state.lessons[s.id];
-    const stars = state.stars[s.id];
-    const done = stars !== undefined;
-    const learned = !!state.lessons[s.id];
-    const mcount = s.items.filter(mastered).length;
-    const segs = s.items.map(t => `<span class="seg${mastered(t) ? ' on' : ''}"></span>`).join('');
-    return `<article class="card st${open ? '' : ' locked'}" style="--i:${idx};${scStyle(s.nr)}">
-      <div class="num mono" aria-hidden="true">${s.nr}</div>
-      <div class="stbody">
-        <h3>${s.title}</h3>
-        <div class="mono sub">${s.sub}</div>
-        ${open ? `<div class="mast" role="img" aria-label="${mcount} von ${s.items.length} Aufgabentypen sicher">${segs}</div>
-        <div class="starsrow"><span class="stars" aria-label="${stars || 0} von 3 Sternen">${starTxt(stars || 0)}</span><span class="small">${learned ? 'Lektion gelesen' : 'Lektion offen'} \u00B7 ${done ? 'geübt' : canPractice ? 'noch nicht geübt' : 'Üben nach der Lektion'}</span></div>`
-        : `<p class="small">Schliesse Station ${s.nr - 1} mit mindestens einem Stern ab, um diese freizuschalten.</p>`}
-      </div>
-      ${open ? `<div class="acts"><button class="btn ${learned ? '' : 'btn-primary'}${nudge === 'learn:' + s.id ? ' nudge' : ''}" data-act="learn" data-st="${s.id}">Lernen</button><button class="btn ${learned && !done ? 'btn-primary' : ''}${nudge === 'start:' + s.id ? ' nudge' : ''}" data-act="start" data-st="${s.id}" ${canPractice ? '' : 'disabled'}>Üben</button></div>` : ''}
-    </article>`;
-  }).join('');
-
-  const rev = reviewPool().length ? `<article class="card review" style="--i:6">
-      <div class="stbody">
-        <h3>Auffrischen</h3>
-        <p class="small">${due > 0 ? `${due} Aufgabentypen sind zum Wiederholen fällig. Gemischte Runde aus allen Stationen, die du schon gespielt hast.` : 'Gerade ist nichts fällig. Aufgaben kommen nach ein paar Tagen automatisch zurück.'}</p>
-      </div>
-      <button class="btn ${due > 0 ? 'btn-primary' : ''}" data-act="review">Runde starten</button>
-    </article>` : '';
-
-  const chKeys = Object.keys(state.challenges).slice(-3).reverse();
-  const chal = `<article class="card chal" style="--i:8">
-      <div class="tag">Challenge und Duell</div>
-      <h3>Gleiche Fragen, fairer Vergleich</h3>
-      <p class="small">Alle mit demselben Code bekommen dieselben 6 Fragen. Deine Lehrperson kann einen Code an die Tafel schreiben, oder du forderst jemanden heraus. Eine Ziffer vorne (zum Beispiel 3-ABCD) beschränkt die Fragen auf die Stationen 1 bis 3.</p>
-      <div class="ansrow chrow"><input id="chcode" class="numin mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="z. B. 4-FUNKE" value="${esc(ui.chCode || '')}" aria-label="Challenge-Code"><button class="btn" data-act="rcode">Zufall</button></div>
-      ${ui.chErr ? `<p class="errtxt" role="alert">${ui.chErr}</p>` : ''}
-      <button class="btn btn-primary block" data-act="challenge">Challenge starten</button>
-      <p class="small nickrow">Dein Zufallsname: <span class="mono b">${state.nick}</span> <button class="btn sm" data-act="nick">Neu würfeln</button></p>
-      ${chKeys.length ? `<ul class="chlist">${chKeys.map(k => `<li><span class="mono">${esc(k)}</span>: ${state.challenges[k].c} von 6 in ${state.challenges[k].t} s</li>`).join('')}</ul>` : ''}
-    </article>`;
-
-  const initW = ui.anim ? 0 : pct;
-  return `
-  <header class="top">
-    ${sparks}
-    <div class="topbar">
-      <div class="logochip"><img src="logo.png" alt="Sekundarschule Halingen"></div>
-      <span class="tag inv">${TOPIC.tag}</span>
-    </div>
-    <div class="hero"><div class="herotxt"><h1 class="${TOPIC.title.length > 14 ? 'long' : ''}">${TOPIC.title}</h1><p class="lead">${TOPIC.lead}</p><p class="bubble" id="bubble" aria-live="polite"></p></div>
-      <button class="wbtn" data-act="poke" aria-label="Watti anstupsen">${watti(pct, 'happy', 'big')}</button></div>
-    <div class="stats">
-      <div class="stat"><span class="k">Stufe ${lv + 1}</span><span class="v">${cur.name}</span><span class="mono s">${cur.pw}</span></div>
-      <div class="stat"><span class="k">Punkte</span><span class="v mono" data-count="${state.xp}" data-suffix=" XP">${state.xp} XP</span><span class="mono s">${nxt ? 'bis ' + nxt.xp : 'Höchste Stufe'}</span></div>
-      <div class="stat"><span class="k">Serie</span><span class="v mono">${sn} ${sn === 1 ? 'Tag' : 'Tage'}</span><span class="mono s">Schonfrist 1 Tag</span></div>
-    </div>
-    <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Fortschritt zur nächsten Stufe"><div data-w="${pct}" style="width:${initW}%"></div></div>
-  </header>
-  <main class="wrap">
-    <p class="small streaknote">${streakNote}</p>
-    ${trophyBar()}
-    <div class="row"><h2>Dein Lernpfad</h2><button class="btn sm" data-act="formulas">${ui.formulas ? CARD + ' zu' : CARD}</button></div>
-    ${ui.formulas ? formulaCard() : ''}
-    ${state.introDone ? '' : introCard()}
-    <div class="path">${cards}${rev}${classCard()}${qrCard()}${chal}</div>
-    <footer class="foot">
-      ${'weeklyGoalPerPlayer' in CFG ? `<p class="small"><a href="lernapp.html">Alle Kapitel</a> \u00B7 <a href="nut.html">Lernlandkarte NuT</a>${TOPIC.other ? ` \u00B7 Weitere App: <a href="${TOPIC.other.href}">${TOPIC.other.title}</a>` : ''}</p>` : ''}
-      <p class="small">Dein Fortschritt wird nur auf diesem Gerät im Browser gespeichert${memoryOnly ? ' (Speichern ist hier gerade nicht möglich, der Fortschritt geht beim Schliessen verloren)' : ''}. Der Zufallsname ist nirgends sonst hinterlegt.</p>
-      <button class="btn sm" data-act="reset">${ui.confirmReset ? 'Sicher? Nochmals tippen zum Löschen' : 'Fortschritt zurücksetzen'}</button>
-    </footer>
-  </main>`;
+/* ---------- Lernstand als verschlüsselter QR-Code (für die Prüf-App der Lehrperson) ---------- */
+const qrAvailable = () => !!(CFG.teacherKey && window.qrcode && window.crypto && window.crypto.subtle && typeof LQ !== 'undefined');
+const chapKey = href => { const m = /^(\d)_(\d)_/.exec(href); return m ? 'halingen-nt' + m[1] + '-' + m[2] + '-v1' : null; };
+function chapState(a) { const k = chapKey(a.href); if (!k) return null; try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function karteIdentity() {
+  let nick = '', nm = state.name || '', kl = state.klasse || '';
+  APPS.forEach(a => { const s = chapState(a); if (!s) return; if (!nick && s.nick) nick = String(s.nick); if (!nm && s.realName) nm = String(s.realName); if (!kl && s.classCode) kl = String(s.classCode); });
+  return { nick: nick || 'Lernlandkarte', nm: String(nm).trim().slice(0, 40), kl: String(kl).trim().slice(0, 20) };
 }
-
-function viewRound() {
-  const q = R.queue[R.i], d = q.d;
-  const last = R.i === R.queue.length - 1;
-  const pct = Math.round(R.i / R.queue.length * 100);
-  const label = R.mode === 'review' ? 'Auffrischen' : R.mode === 'challenge' ? 'Challenge \u00B7 ' + R.code : `Station ${R.st.nr} \u00B7 ${R.st.title}`;
-  let body = '';
-  if (d.type === 'mc') {
-    body = `<div class="opts" role="group" aria-label="Antworten">` + d.shown.map((o, i) => {
-      let cls = 'opt';
-      if (q.done) { if (o.ok) cls += ' good'; else if (q.sel === i) cls += ' bad'; }
-      return `<button class="${cls}" style="--i:${i}" data-act="opt" data-i="${i}" ${q.done ? 'disabled' : ''}><span class="ltr mono" aria-hidden="true">${'ABCD'[i]}</span><span>${o.t}</span></button>`;
-    }).join('') + `</div>`;
-  } else {
-    const err = q.fb && (q.fb.kind === 'warn' || q.fb.kind === 'bad') ? ' err' : '';
-    body = `<label class="sr" for="ans">Deine Antwort in ${d.unit}</label>
-      <div class="ansrow"><input id="ans" class="numin mono${err}" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Zahl" value="${esc(q.input)}" ${q.done ? 'disabled' : ''}><span class="unitl mono">${d.unit}</span></div>
-      <p class="small">Dezimalzahlen mit Komma oder Punkt.</p>
-      ${q.done ? '' : `<button class="btn btn-primary block" data-act="check">${q.attempts ? 'Nochmals prüfen' : 'Prüfen'}</button>`}`;
-  }
-  const canExplain = q.fb && (q.fb.kind === 'bad' || q.fb.kind === 'warn') && q.fb.title !== 'Gib eine Zahl ein.' && R.mode !== 'challenge' && q.tpl.learn;
-  const fb = q.fb ? `<div class="fb ${q.fb.kind}" role="status" aria-live="polite">${q.fb.xp ? `<span class="xppop">+${q.fb.xp} XP</span>` : ''}<div class="fbt">${q.fb.title}</div><div class="fbb">${q.fb.body}</div>${canExplain ? '<button class="btn sm fbx" data-act="explain">Erklärung ansehen</button>' : ''}</div>` : '';
-  const mood = !q.fb ? 'happy' : q.fb.kind === 'good' ? 'cheer' : q.fb.kind === 'bad' ? 'sad' : 'think';
-  const nxt = q.done ? `<button class="btn btn-primary block" data-act="next">${last ? 'Ergebnis ansehen' : 'Weiter'}</button>` : '';
-  return `
-  <main class="wrap round">
-    <div class="rtop">
-      <button class="btn sm" data-act="quit">Beenden</button>
-      <span class="mono small">Frage ${Math.min(R.i + 1, R.queue.length)} von ${R.queue.length}</span>
-      <button class="btn sm" data-act="formulas">${ui.formulas ? CARD + ' zu' : CARD}</button>
-    </div>
-    <div class="xpbar light" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Fortschritt in dieser Runde"><div style="width:${pct}%"></div></div>
-    ${ui.formulas ? formulaCard() : ''}
-    <section class="card qcard" style="${R.st ? scStyle(R.st.nr) : '--sc:var(--primary)'}">
-      ${watti(pct, mood, 'mini')}
-      <div class="tags"><span class="tag">${label}</span>${d.type === 'num' && q.tpl.ext ? '<span class="badge">Erweiterung</span>' : ''}${q.retry ? '<span class="badge warn">Zweiter Anlauf</span>' : ''}${R.mode === 'challenge' ? '<span class="badge warn">Zeit läuft, 1 Versuch</span>' : ''}</div>
-      <h2 class="q">${d.q}</h2>
-      ${body}
-    </section>
-    ${fb}
-    ${nxt}
-  </main>`;
-}
-
-function viewSummary() {
-  const s = R.summary;
-  const lv = LEVELS[levelOf(state.xp)];
-  if (R.mode === 'challenge') {
-    const ch = s.ch;
-    const headline = ch.c === 6 ? 'Fehlerlos.' : ch.c >= 4 ? 'Gut gemacht.' : 'Das geht noch besser.';
-    return `
-  <main class="wrap summary">
-    <section class="card">
-      <div class="sumw">${watti(100, ch.c >= 4 ? 'cheer' : 'think', 'big')}</div>
-      <div class="tag">Challenge \u00B7 Code ${esc(ch.code)}</div>
-      <h2 class="sumh">${headline}</h2>
-      <p class="lead2"><span class="mono b">${ch.c} von 6</span> richtig in <span class="mono b">${ch.t} s</span>.</p>
-      <div class="resline mono" id="resline">${esc(ch.line)}</div>
-      <button class="btn sm" data-act="copy">Ergebnis kopieren</button>
-      <p class="small" id="copymsg" aria-live="polite"></p>
-      <p class="small">${ch.prev ? `Dein erster Versuch mit diesem Code: ${ch.prev.c} von 6 in ${ch.prev.t} s. Für den Vergleich zählt der erste Versuch.` : 'Das ist dein erster Versuch mit diesem Code. Er zählt für den Vergleich.'}</p>
-      <p class="small">So wird verglichen: Wer mehr richtig hat, liegt vorne. Bei gleich vielen richtigen Antworten gewinnt die kürzere Zeit.</p>
-      ${BE.client && state.classCode ? `<div id="chboard" class="chboard">${chBoardHtml()}</div>` : ''}
-      ${BE.client && state.classCode && schoolCode() ? `<div id="chcls" class="chboard">${chClsHtml()}</div>` : ''}
-      ${BE.client && !state.classCode ? '<p class="small">Tritt auf dem Lernpfad einer Klasse bei, dann siehst du hier die Rangliste deiner Klasse.</p>' : ''}
-      <div class="gain"><span class="mono b">+${s.gained} XP</span><span class="small">${s.bonus ? `davon ${s.bonus} Bonus` : 'kein Bonus'}</span></div>
-      ${s.levelUp !== null ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
-      ${newTrophyHtml(s.newTrophies)}
-      ${s.missed.length ? `<div class="miss"><div class="tag">Das solltest du nochmals anschauen</div><ul>${[...new Set(s.missed)].map(t => `<li>${t}</li>`).join('')}</ul></div>` : ''}
-    </section>
-    <button class="btn block" data-act="challenge-again" data-code="${esc(ch.code)}">Nochmals mit diesem Code (zählt nicht)</button>
-    <button class="btn block" data-act="home">Zum Lernpfad</button>
-  </main>`;
-  }
-  const stationNext = R.mode === 'station' && R.st.nr < STATIONS.length ? STATIONS[R.st.nr] : null;
-  const canNext = !!stationNext;
-  const headline = R.mode === 'station'
-    ? (s.stars === 3 ? 'Stark. Alles sitzt.' : s.stars >= 1 ? 'Geschafft.' : 'Noch nicht ganz.')
-    : 'Runde beendet.';
-  const sub = R.mode === 'station' && s.stars === 0 ? 'Für den ersten Stern brauchst du mindestens 4 von 6 beim ersten Versuch. Schau dir die Lektion nochmals an, dann klappt es.' : '';
-  const stars = R.mode === 'station' ? `<div class="bigstars" aria-label="${s.stars} von 3 Sternen">${[0, 1, 2].map(i => `<span class="${i < s.stars ? 'on' : ''}" style="--d:${i * 220}ms">${i < s.stars ? '\u2605' : '\u2606'}</span>`).join('')}</div>` : '';
-  return `
-  <main class="wrap summary">
-    <section class="card">
-      <div class="sumw">${watti(100, R.mode === 'station' && s.stars === 0 ? 'think' : 'cheer', 'big')}</div>
-      <div class="tag">${R.mode === 'station' ? 'Station ' + R.st.nr + ' \u00B7 ' + R.st.title : 'Auffrischen'}</div>
-      <h2 class="sumh">${headline}</h2>
-      ${stars}
-      <p class="lead2"><span class="mono b">${s.c} von ${s.base}</span> beim ersten Versuch richtig.</p>
-      ${sub ? `<p class="small">${sub}</p>` : ''}
-      <div class="gain"><span class="mono b" data-count="${s.gained}" data-prefix="+" data-suffix=" XP">+${s.gained} XP</span><span class="small">${s.bonus ? `davon ${s.bonus} Bonus` : 'kein Bonus in dieser Runde'}</span></div>
-      <p class="small">Serie: <span class="mono b">${streakNow()} ${streakNow() === 1 ? 'Tag' : 'Tage'}</span></p>
-      ${s.levelUp !== null ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
-      ${newTrophyHtml(s.newTrophies)}
-      ${s.missed.length ? `<div class="miss"><div class="tag">Das kommt wieder</div><ul>${[...new Set(s.missed)].map(t => `<li>${t}</li>`).join('')}</ul></div>` : ''}
-    </section>
-    ${canNext ? `<button class="btn btn-primary block" data-act="learn" data-st="${stationNext.id}">Weiter zu Station ${stationNext.nr}: lernen</button>` : ''}
-    ${R.mode === 'station' ? `<button class="btn block" data-act="start" data-st="${R.st.id}">Diese Station nochmals</button>` : `<button class="btn block" data-act="review">Noch eine Auffrischrunde</button>`}
-    ${R.mode === 'station' && s.stars === 0 ? `<button class="btn block" data-act="learn" data-st="${R.st.id}">Lektion nochmals ansehen</button>` : ''}
-    <button class="btn block" data-act="home">Zum Lernpfad</button>
-  </main>`;
-}
-
-function viewLesson() {
-  const n = L.st.lesson.length, c = L.st.lesson[L.i], last = L.i === n - 1;
-  let extra = '';
-  if (c.check) {
-    if (!L.shown[L.i]) L.shown[L.i] = shuffle(c.check.options.map((t, i) => ({ t, ok: i === 0 })));
-    const sel = L.sel[L.i], done = sel !== undefined, sh = L.shown[L.i];
-    extra = `<h3 class="q">${c.check.q}</h3><div class="opts" role="group" aria-label="Antworten">` + sh.map((o, i) => {
-      let cls = 'opt';
-      if (done) { if (o.ok) cls += ' good'; else if (sel === i) cls += ' bad'; }
-      return `<button class="${cls}" data-act="lopt" data-i="${i}" ${done ? 'disabled' : ''}><span class="ltr mono" aria-hidden="true">${'ABCD'[i]}</span><span>${o.t}</span></button>`;
-    }).join('') + `</div>`;
-    if (done) extra += `<div class="fb ${sh[sel].ok ? 'good' : 'bad'}" role="status" aria-live="polite"><div class="fbt">${sh[sel].ok ? 'Richtig.' : 'Nicht ganz.'}</div><div class="fbb">${c.check.explain}</div></div>`;
-  }
-  const canNext = !c.check || L.sel[L.i] !== undefined;
-  const goals = L.i === 0 && L.st.goals ? `<div class="goals"><div class="tag">Das kannst du danach</div><ul>${L.st.goals.map(g => `<li>${g}</li>`).join('')}</ul></div>` : '';
-  const worked = c.worked ? workedHtml(c.worked, L.wk[L.i] || 0) : '';
-  const lastAct = last ? (L.fromRound ? 'backround' : 'lfinish') : 'lnext';
-  const lastLbl = last ? (L.fromRound ? 'Zurück zur Aufgabe' : 'Lektion abschliessen') : 'Weiter';
-  const dots = L.st.lesson.map((_, i) => `<span class="dot${i <= L.i ? ' on' : ''}"></span>`).join('');
-  return `
-  <main class="wrap round">
-    <div class="rtop">
-      <button class="btn sm" data-act="${L.fromRound ? 'backround' : 'home'}">${L.fromRound ? 'Zurück zur Aufgabe' : 'Zum Lernpfad'}</button>
-      <span class="mono small">Karte ${L.i + 1} von ${n}</span>
-    </div>
-    <div class="dots" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${L.i + 1}" aria-label="Fortschritt in der Lektion">${dots}</div>
-    <section class="card qcard lcard ${L.dir > 0 ? 'fromR' : 'fromL'}" style="${scStyle(L.st.nr)}">
-      <div class="tags"><span class="tag">Lernen \u00B7 Station ${L.st.nr} \u00B7 ${L.st.title}</span></div>
-      <h2 class="lh">${c.h}</h2>
-      ${goals}
-      ${c.body ? `<div class="lbody">${c.body}</div>` : ''}
-      ${worked}
-      ${c.sim ? '<div id="sim" class="simhost"></div>' : ''}
-      ${extra}
-    </section>
-    <div class="navrow">
-      <button class="btn" data-act="lprev" ${L.i === 0 ? 'disabled' : ''}>Zurück</button>
-      <button class="btn btn-primary" data-act="${lastAct}" ${canNext ? '' : 'disabled'}>${lastLbl}</button>
-    </div>
-  </main>`;
-}
-
-function viewLessonDone() {
-  const s = L.st, lv = LEVELS[levelOf(state.xp)];
-  return `
-  <main class="wrap summary">
-    <section class="card">
-      <div class="sumw">${watti(100, 'cheer', 'big')}</div>
-      <div class="tag">Station ${s.nr} \u00B7 ${s.title}</div>
-      <h2 class="sumh">Lektion geschafft.</h2>
-      <p class="lead2">${L.gain ? `<span class="mono b" data-count="${L.gain}" data-prefix="+" data-suffix=" XP">+${L.gain} XP</span> für die Lektion.` : 'Die Punkte für diese Lektion gab es schon beim ersten Mal.'}</p>
-      <p class="small">Jetzt wendest du das Gelernte in einer Runde an.</p>
-      ${newTrophyHtml(L.newTrophies)}
-      ${L.levelUp ? `<div class="fb good"><div class="fbt">Neue Stufe: ${lv.name} \u00B7 ${lv.pw}</div></div>` : ''}
-    </section>
-    <button class="btn btn-primary block" data-act="start" data-st="${s.id}">Jetzt üben</button>
-    <button class="btn block" data-act="learn" data-st="${s.id}">Lektion nochmals ansehen</button>
-    <button class="btn block" data-act="home">Zum Lernpfad</button>
-  </main>`;
-}
-
-function afterRender() {
-  if (ui.screen === 'home' && checkTrophies().length) save();
-  if (ui.qrTimer) { clearInterval(ui.qrTimer); ui.qrTimer = null; }
-  if (ui.screen === 'qr' && ui.qr && ui.qr.state === 'ok') {
-    const tick = () => {
-      const left = Math.max(0, Math.round((ui.qr.until - Date.now()) / 1000)), el = $id('qrleft');
-      if (el) el.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
-      if (left <= 0) { clearInterval(ui.qrTimer); ui.qrTimer = null; const bx = $id('qrbox'); if (bx) bx.innerHTML = '<p class="errtxt">Abgelaufen. Erzeuge einen neuen Code.</p>'; }
-    };
-    tick(); ui.qrTimer = setInterval(tick, 1000);
-  }
-  document.querySelectorAll('[data-count]').forEach(el => {
-    const to = +el.dataset.count, pre = el.dataset.prefix || '', suf = el.dataset.suffix || '';
-    if (ui.anim) countUp(el, to, pre, suf); else el.textContent = pre + to + suf;
+function kartePayload() {
+  const id = karteIdentity(), amap = { r: '1', y: '2', g: '3' };
+  const a = DATA.map(b => b.komp.map(k => amap[state.amp[k.code]] || '0').join('')).join('');
+  const c = [];
+  APPS.forEach(ap => {
+    const s = chapState(ap); if (!s || !((s.xp || 0) > 0 || (s.rounds || 0) > 0)) return;
+    const m = /^(\d)_(\d)_/.exec(ap.href), passed = Object.keys(s.stars || {}).filter(k => s.stars[k] >= 1).length;
+    c.push([m[1] + '_' + m[2], Math.round(s.xp || 0), Math.min(6, passed)]);
   });
-  if (ui.screen === 'home' && BE.client && state.classCode) loadBoard();
-  if (ui.anim) document.querySelectorAll('[data-w]').forEach(el => nextFrame(() => { el.style.width = el.dataset.w + '%'; }));
-  if (ui.screen === 'lesson') {
-    const c = L.st.lesson[L.i];
-    if (c.sim) { const host = $id('sim'); if (host && SIMS[c.sim]) SIMS[c.sim](host); }
-  }
-  if (ui.screen === 'summary' && ui.anim && R && R.summary) {
-    const s = R.summary;
-    if ((R.mode === 'station' && s.stars === 3) || (R.mode === 'challenge' && s.c === 6) || s.levelUp !== null) confetti(document.querySelector('.summary .card'));
-  }
+  return { v: 1, tp: 'karte', i: Math.floor(Date.now() / 1000), id: LQ.randomId(8), n: id.nick, r: id.nm, k: id.kl, a, c };
 }
-
-function render(mode) {
-  const app = $id('app');
-  if (!app) return;
-  const cls = mode === 'keep' ? ' noanim' : mode === 'fb' ? ' fbmode' : ' enter';
-  ui.anim = cls === ' enter';
-  const html = ui.screen === 'home' ? viewHome() : ui.screen === 'round' ? viewRound() : ui.screen === 'summary' ? viewSummary()
-    : ui.screen === 'lesson' ? viewLesson() : ui.screen === 'qr' ? viewQr() : ui.screen === 'trophies' ? viewTrophies() : viewLessonDone();
-  app.innerHTML = `<div class="view${cls}">${html}</div>`;
-  afterRender();
-  if (mode === 'fb') {
-    const el = document.querySelector('[data-act="next"]') || document.querySelector('.fb');
-    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'end', behavior: 'smooth' });
-    return;
-  }
-  if (mode !== 'keep') window.scrollTo(0, 0);
-  if (ui.screen === 'round' && mode !== 'keep') {
-    const q = R.queue[R.i];
-    if (q.d.type === 'num' && !q.done) {
-      const el = $id('ans');
-      if (el) setTimeout(() => el.focus(), 30);
-    }
-  }
+let qrTimer = null;
+async function showQr() {
+  const out = $id('qrout'); if (!out) return;
+  if (qrTimer) { clearInterval(qrTimer); qrTimer = null; }
+  out.textContent = 'Wird erzeugt …';
+  try {
+    const token = await LQ.encrypt(CFG.teacherKey, kartePayload());
+    const q = window.qrcode(0, 'M'); q.addData(token); q.make();
+    const until = Date.now() + 600000;
+    out.innerHTML = `<div class="qrbox" id="qrbox" role="img" aria-label="QR-Code mit deinem verschlüsselten Lernstand">${q.createSvgTag({ cellSize: 4, margin: 4, scalable: true })}</div><p class="countdown">Gültig noch <b class="mono" id="qleft"></b></p><p class="small">Zeige den Code deiner Lehrperson. Er ist zehn Minuten gültig und kann nur einmal gelesen werden.</p>`;
+    const tick = () => {
+      const left = Math.max(0, Math.round((until - Date.now()) / 1000)), el = $id('qleft');
+      if (el) el.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+      if (left <= 0) { clearInterval(qrTimer); qrTimer = null; const bx = $id('qrbox'); if (bx) bx.innerHTML = '<p class="errtxt">Abgelaufen. Erzeuge einen neuen Code.</p>'; }
+    };
+    tick(); qrTimer = setInterval(tick, 1000);
+  } catch (e) { out.innerHTML = '<p class="errtxt">Der Code konnte nicht erzeugt werden. Versuche es nochmals.</p>'; }
 }
-
-/* ---------- Eingaben ---------- */
-function onAct(b) {
-  const a = b.dataset.act;
-  if (a === 'start') startRound(b.dataset.st);
-  else if (a === 'review') startRound('review');
-  else if (a === 'learn') startLesson(b.dataset.st);
-  else if (a === 'lnext') lessonGo(1);
-  else if (a === 'lprev') lessonGo(-1);
-  else if (a === 'lopt') { if (L.sel[L.i] === undefined) { L.sel[L.i] = parseInt(b.dataset.i, 10); render('fb'); } }
-  else if (a === 'lfinish') finishLesson();
-  else if (a === 'challenge') startChallenge();
-  else if (a === 'challenge-again') startRound('challenge', b.dataset.code);
-  else if (a === 'rcode') {
-    const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = '6-';
-    for (let i = 0; i < 4; i++) c += ch[Math.floor(Math.random() * ch.length)];
-    ui.chCode = c; ui.chErr = ''; render('keep');
-  }
-  else if (a === 'nick') { state.nick = newNick(); save(); render('keep'); }
-  else if (a === 'copy') {
-    const line = R && R.summary && R.summary.ch ? R.summary.ch.line : '';
-    const say = ok => { const el = $id('copymsg'); if (el) el.textContent = ok ? 'Kopiert.' : 'Markiere den Text und kopiere ihn von Hand.'; };
-    try { navigator.clipboard.writeText(line).then(() => say(true), () => say(false)); } catch (err) { say(false); }
-  }
-  else if (a === 'joinclass') joinClass();
-  else if (a === 'leaveclass') leaveClass().then(() => render('keep'));
-  else if (a === 'refreshboard') { BE.status = ''; if (ui.bt === 'school') loadSchool(true); else if (ui.bt === 'duel') loadClasses(true); else loadBoard(true); }
-  else if (a === 'bt') { ui.bt = b.dataset.t; render('keep'); if (ui.bt === 'school') loadSchool(); else if (ui.bt === 'duel') loadClasses(); }
-  else if (a === 'duelgo') { const el = $id('duelcodes'); ui.duelInput = el ? el.value : ''; BE.classes = null; render('keep'); loadClasses(true); }
-  else if (a === 'poke') {
-    const bub = $id('bubble');
-    if (bub) { bub.textContent = WATTI_TIPS[tipI++ % WATTI_TIPS.length]; bub.classList.remove('show'); void bub.offsetWidth; bub.classList.add('show'); }
-    const wt = document.querySelector('.hero .watti');
-    if (wt) { wt.classList.remove('hop'); void wt.offsetWidth; wt.classList.add('hop'); }
-  }
-  else if (a === 'introdone') { state.introDone = true; save(); render('keep'); }
-  else if (a === 'wstep') {
-    const ol = document.querySelector('.wsteps'), hid = ol && ol.querySelector('li.hid');
-    if (hid) { hid.classList.remove('hid'); L.wk[L.i] = (L.wk[L.i] || 0) + 1; if (hid.scrollIntoView) hid.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-    if (ol && !ol.querySelector('li.hid')) { b.disabled = true; b.textContent = 'Das war es'; }
-  }
-  else if (a === 'explain') openExplain();
-  else if (a === 'backround') { ui.screen = 'round'; render('keep'); window.scrollTo(0, 0); }
-  else if (a === 'showqr') showQr();
-  else if (a === 'opt') answerMC(parseInt(b.dataset.i, 10));
-  else if (a === 'check') checkNum();
-  else if (a === 'next') nextQ();
-  else if (a === 'home') { ui.screen = 'home'; ui.formulas = false; render(); }
-  else if (a === 'trophies') { checkTrophies(); TROPHIES.forEach(t => { if (state.trophies[t.id]) state.trophySeen[t.id] = true; }); save(); ui.screen = 'trophies'; render(); }
-  else if (a === 'quit') { ui.screen = 'home'; ui.formulas = false; R = null; render(); }
-  else if (a === 'formulas') {
-    if (R && ui.screen === 'round') { const el = $id('ans'); if (el) R.queue[R.i].input = el.value; }
-    ui.formulas = !ui.formulas; render('keep');
-  }
-  else if (a === 'reset') {
-    if (ui.confirmReset) { leaveClass(true); state = defaults(); state.nick = newNick(); save(); ui.confirmReset = false; }
-    else ui.confirmReset = true;
-    render('keep');
-  }
+function qrCardHtml() {
+  if (!qrAvailable()) return '';
+  return `<article class="card qrc">
+    <h3>QR-Code für die Lehrperson</h3>
+    <p class="small">Dein Lernstand (Ampel und Fortschritt in den Kapiteln) wird verschlüsselt in einen QR-Code gepackt. Nur die Prüf-App deiner Lehrperson kann ihn lesen. Es wird nichts hochgeladen.</p>
+    <div class="qfields"><label class="small">Name (freiwillig)<input id="qname" class="qin" maxlength="40" autocomplete="off" value="${esc(state.name || '')}"></label>
+    <label class="small">Klassencode (freiwillig)<input id="qklasse" class="qin" maxlength="20" autocomplete="off" value="${esc(state.klasse || '')}"></label></div>
+    <button class="btn btn-primary block" data-act="showqr">QR-Code anzeigen</button>
+    <div id="qrout" aria-live="polite"></div>
+  </article>`;
 }
-// Tippen zuverlässig machen: Touch-Geräte lösen manchmal keinen Klick aus (iPhone-Safari)
-let touchPos = null, lastTouchAct = 0;
-document.addEventListener('touchstart', e => { const t = e.touches && e.touches[0]; touchPos = t ? { x: t.clientX, y: t.clientY } : null; }, { passive: true });
-document.addEventListener('touchend', e => {
-  const t = e.changedTouches && e.changedTouches[0];
-  if (!touchPos || !t) return;
-  const moved = Math.abs(t.clientX - touchPos.x) + Math.abs(t.clientY - touchPos.y); touchPos = null;
-  if (moved > 10) return;                                   // Wischen zum Scrollen zählt nicht als Tippen
-  const b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
-  if (!b || b.disabled) return;
-  e.preventDefault(); lastTouchAct = Date.now(); onAct(b);
-}, { passive: false });
+function build() {
+  const cards = DATA.map((b, i) => `<details class="card bk" data-b="${b.nr}" style="--sc:${BCOL[i]};--i:${i}">
+      <summary><span class="bnum" aria-hidden="true">${b.nr}</span><span class="btxt"><span class="tag">NT.${b.nr}</span><span class="btitle">${esc(b.titel)}</span><span class="bsegs" id="bs${b.nr}" aria-hidden="true">${b.komp.map(k => `<i data-s="${k.code}"></i>`).join('')}</span></span><span class="bcount mono" id="bc${b.nr}"></span></summary>
+      <ul class="kplist">${b.komp.map(kompHtml).join('')}</ul></details>`).join('');
+  const sparks = [['8%', '30%', '16px', 'var(--pop-pink)', '8s'], ['70%', '12%', '10px', 'var(--pop-yellow)', '10s'], ['90%', '60%', '18px', 'var(--pop-cyan)', '9s'], ['40%', '78%', '12px', 'var(--pop-green)', '11s'], ['22%', '8%', '9px', 'var(--pop-yellow)', '7s']]
+    .map(p => `<span class="spark" aria-hidden="true" style="--x:${p[0]};--y:${p[1]};--s:${p[2]};--c:${p[3]};--t:${p[4]}"></span>`).join('');
+  $id('app').innerHTML = `<div class="view enter">
+  <header class="top">${sparks}
+    <div class="topbar"><div class="logochip"><img src="logo.png" alt="Sekundarschule Halingen"></div><span class="tag inv">Natur und Technik</span></div>
+    <div class="hero"><div class="herotxt"><h1>Lernlandkarte</h1><p class="lead">Wo stehst du im Lehrplan Natur und Technik?</p></div><div class="wbtn" id="wh"></div></div>
+    <div class="stats"><div class="stat"><span class="k">Sicher</span><span class="v mono" id="cg"></span></div><div class="stat"><span class="k">Fast</span><span class="v mono" id="cy"></span></div><div class="stat"><span class="k">Noch nicht</span><span class="v mono" id="cr"></span></div></div>
+    <div class="stack" aria-hidden="true"><div class="sg" id="sg"></div><div class="sy" id="sy"></div><div class="sred" id="sr"></div></div>
+  </header>
+  <main class="wrap hubmain" id="hubmain" data-f="${state.filter}">
+    <p class="small">Schätze dich bei jeder Kompetenz selbst ein. Ampel: Noch nicht, Fast oder Sicher. Wo es eine Lern-App gibt, findest du den Link direkt dabei. Die Einschätzung bleibt nur auf diesem Gerät.</p>
+    <div class="chips" role="group" aria-label="Filter">${[['all', 'Alle'], ['open', 'Noch nicht sicher'], ['app', 'Mit Lern-App']].map(f => `<button class="btn sm" data-act="filter" data-f="${f[0]}">${f[1]}</button>`).join('')}</div>
+    <div class="path" id="bereiche">${cards}</div>
+    <p class="small" id="nofit" hidden>Nichts zu zeigen mit diesem Filter.</p>
+    ${qrCardHtml()}
+    <footer class="foot">
+      ${'weeklyGoalPerPlayer' in CFG ? '<p class="small"><a href="lernapp.html">Alle Kapitel mit Fortschritt</a></p>' : ''}
+      <p class="small">Die Zuordnung der Lern-Apps zu den Kompetenzen ist eine Näherung. Jede App übt nur Teile einer Kompetenz.${memoryOnly ? ' Speichern ist hier gerade nicht möglich.' : ''}</p>
+      <div class="btnrow"><button class="btn sm" data-act="copy">Meinen Stand kopieren</button><button class="btn sm" data-act="reset" id="rst">Alles zurücksetzen</button></div>
+      <p class="small" id="msg" aria-live="polite"></p>
+    </footer>
+  </main></div>`;
+  paint();
+}
+function paint(changed) {
+  const g = countOf('g'), y = countOf('y'), r = countOf('r');
+  $id('cg').textContent = g + ' von ' + total; $id('cy').textContent = String(y); $id('cr').textContent = String(r);
+  $id('sg').style.width = g / total * 100 + '%'; $id('sy').style.width = y / total * 100 + '%'; $id('sr').style.width = r / total * 100 + '%';
+  const mood = changed === 'r' ? 'think' : changed === 'g' ? 'cheer' : 'happy';
+  $id('wh').innerHTML = watti(g / total * 100, mood, 'big');
+  DATA.forEach(b => {
+    const gb = b.komp.filter(k => state.amp[k.code] === 'g').length;
+    $id('bc' + b.nr).textContent = gb + '/' + b.komp.length;
+    b.komp.forEach(k => { const s = document.querySelector(`#bs${b.nr} [data-s="${k.code}"]`); s.className = state.amp[k.code] || ''; });
+  });
+  document.querySelectorAll('.kp').forEach(li => {
+    const c = li.dataset.code, v = state.amp[c] || '';
+    li.classList.remove('r', 'y', 'g'); if (v) li.classList.add(v);
+    li.querySelectorAll('.amp').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+  });
+  document.querySelectorAll('.filter, [data-act="filter"]').forEach(b => b.classList.toggle('on', b.dataset.f === state.filter));
+  $id('hubmain').dataset.f = state.filter;
+  let any = false;
+  document.querySelectorAll('.bk').forEach(card => {
+    const vis = [...card.querySelectorAll('.kp')].map(li => {
+      const hide = (state.filter === 'open' && li.classList.contains('g')) || (state.filter === 'app' && !li.classList.contains('hasapp'));
+      li.hidden = hide; return !hide;
+    }).some(Boolean);
+    card.hidden = !vis; if (vis) any = true;
+  });
+  $id('nofit').hidden = any;
+  $id('rst').textContent = confirmReset ? 'Sicher? Nochmals tippen' : 'Alles zurücksetzen';
+}
 document.addEventListener('click', e => {
-  if (Date.now() - lastTouchAct < 700) return;             // schon über Touch behandelt
-  const b = e.target.closest('[data-act]');
-  if (!b || b.disabled) return;
-  onAct(b);
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'showqr') { showQr(); return; }
+  if (a === 'amp') {
+    const c = b.dataset.c, v = b.dataset.v;
+    if (state.amp[c] === v) delete state.amp[c]; else state.amp[c] = v;
+    save(); paint(state.amp[c]);
+    const nr = +c.split('.')[1], bb = DATA.find(x => x.nr === nr);
+    if (state.amp[c] === 'g' && bb.komp.every(k => state.amp[k.code] === 'g') && !celebrated.has(nr)) { celebrated.add(nr); confetti(b.closest('.bk')); }
+  } else if (a === 'filter') { state.filter = b.dataset.f; save(); paint(); }
+  else if (a === 'copy') {
+    const lines = ['Mein Stand in NuT (3. Zyklus)'];
+    DATA.forEach(bb => { lines.push('', 'NT.' + bb.nr + ' ' + bb.titel); bb.komp.forEach(k => lines.push('  ' + k.code + ': ' + (AMP[state.amp[k.code]] || 'noch nicht eingeschätzt'))); });
+    const say = ok => { $id('msg').textContent = ok ? 'Kopiert.' : 'Kopieren hat nicht geklappt.'; };
+    try { navigator.clipboard.writeText(lines.join('\n')).then(() => say(true), () => say(false)); } catch (x) { say(false); }
+  } else if (a === 'reset') {
+    if (confirmReset) { state = { amp: {}, filter: 'all' }; save(); confirmReset = false; celebrated.clear(); } else confirmReset = true;
+    paint();
+  }
 });
+if (typeof globalThis !== 'undefined') globalThis.__hub = { DATA, APPS, PLAN };
+build();
 document.addEventListener('input', e => {
-  if (!e.target) return;
-  if (e.target.id === 'chcode') ui.chCode = e.target.value;
-  else if (e.target.id === 'realname') { state.realName = e.target.value.slice(0, 30); save(); }
+  if (e.target && (e.target.id === 'qname' || e.target.id === 'qklasse')) { state[e.target.id === 'qname' ? 'name' : 'klasse'] = e.target.value; save(); }
 });
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || !e.target) return;
-  if (e.target.id === 'ans') { e.preventDefault(); checkNum(); }
-  else if (e.target.id === 'chcode') { e.preventDefault(); startChallenge(); }
-  else if (e.target.id === 'clscode') { e.preventDefault(); joinClass(); }
-});
-
-
-if (typeof globalThis !== 'undefined') globalThis.__lernapp = { STATIONS, fmt, parseNum, buildChallenge, normCode, SIMS, getR: () => R, getState: () => state };
-beInit();
-render();
-// Sprung aus der Startseite: lernapp.html öffnet mit #learn-<Station> direkt die Lektion
-(function () {
-  const m = typeof location !== 'undefined' ? /^#learn-([a-z0-9]+)$/.exec(String(location.hash || '')) : null;
-  if (m && STATIONS.some(s => s.id === m[1])) startLesson(m[1]);
 })();
-})();
-
 
 </script>
 </body>

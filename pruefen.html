@@ -579,9 +579,9 @@ h1, h2, h3, .top h1, .row h2, .sumh, .lh, .st h3, .review h3, .clsc h3, .chal h3
 .amp.r .dotc { background: var(--pop-pink); } .amp.y .dotc { background: var(--pop-yellow); } .amp.g .dotc { background: var(--pop-green); }
 .amp[aria-pressed="true"] { border-color: var(--line); box-shadow: 0 3px 0 var(--line); font-weight: 900; }
 .amp.r[aria-pressed="true"] { background: var(--bad-bg); } .amp.y[aria-pressed="true"] { background: var(--warn-bg); } .amp.g[aria-pressed="true"] { background: var(--good-bg); }
-.lp { margin-top: var(--space-2); }
-.lp summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
-.lp p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+.lptext { margin-top: var(--space-2); }
+.lptext summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
+.lptext p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
 .chips .btn.on { background: var(--primary); color: var(--on-primary); }
 @media (max-width: 380px) { .amp { font-size: var(--text-xs); } .dotc { display: none; } }
 
@@ -788,6 +788,10 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 .base { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--line); border-radius: 8px; font-weight: 800; background: var(--surface); }
 .base.bA { background: var(--pop-yellow); } .base.bT { background: var(--pop-cyan); } .base.bG { background: var(--pop-pink); } .base.bC { background: var(--pop-green); }
 .base.leer { opacity: .55; }
+
+/* Lernlandkarte: QR-Code */
+.qfields { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
+.qin { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
 </style>
 </head>
 <body>
@@ -925,8 +929,11 @@ const $ = id => document.getElementById(id);
 const KEY_STORE = 'lq-teacher-key', LIST_STORE = 'lq-teacher-list';
 const LEVELS_XP = [0, 80, 200, 380, 620, 920];
 const APPS = {
+  karte: { name: 'Lernlandkarte', levels: [] },
   leistung: { name: 'Leistung', levels: ['Stirnlampe', 'E-Bike-Motor', 'Föhn', 'Traktor', 'Lokomotive', 'Kraftwerk'] },
   motor: { name: 'Motor', levels: ['Spielzeugmotor', 'Ventilator', 'Akkuschrauber', 'Elektroauto', 'Lokomotive', 'Kraftwerk'] },
+  'nt7-2': { name: '7_2 Den Körper analysieren', levels: ['Zelle', 'Muskel', 'Lungenbläschen', 'Blutzelle', 'Herz', 'Körperprofi'] },
+  'nt7-6': { name: '7_6 Arbeiten im Labor', levels: ['Laborneuling', 'Brennerprofi', 'Messkünstler', 'Stoffdetektiv', 'Trennmeister', 'Laborführerschein'] },
   'nt9-8': { name: '9_8 Stoffkreisläufe erkunden', levels: ['Rohstoff', 'Kreislauf', 'Wertstoff', 'Recyclinganlage', 'Klimaprofi', 'Kreislaufmeister'] },
   'nt9-7': { name: '9_7 Land-Ökosysteme erforschen', levels: ['Samenkorn', 'Wiese', 'Waldrand', 'Humusboden', 'Mischwald', 'Naturhüter'] },
   'nt9-6': { name: '9_6 Evolution nachvollziehen', levels: ['Urbakterium', 'Landpflanze', 'Wirbeltier', 'Säugetier', 'Darwinfink', 'Evolutionsprofi'] },
@@ -981,6 +988,20 @@ function plausibility(p) {
 }
 function starsText(s) { return s.split('').map(c => (c === '-' ? '\u2013' : '\u2605'.repeat(+c) || '0')).join('  '); }
 
+function karteCounts(p) {
+  const a = typeof p.a === 'string' ? p.a : '', c = Array.isArray(p.c) ? p.c : [];
+  return { g: (a.match(/3/g) || []).length, y: (a.match(/2/g) || []).length, r: (a.match(/1/g) || []).length, o: (a.match(/0/g) || []).length,
+    started: c.length, xp: c.reduce((s, x) => s + (+x[1] || 0), 0), passed: c.reduce((s, x) => s + (+x[2] || 0), 0) };
+}
+function karteFlags(p) {
+  const f = [];
+  if (typeof p.a !== 'string' || !/^[0-3]{1,80}$/.test(p.a)) f.push('Ungültige Selbsteinschätzung.');
+  if (!Array.isArray(p.c)) f.push('Kapitelangaben fehlen.');
+  else p.c.forEach(x => { if (!Array.isArray(x) || !/^\d_\d$/.test(String(x[0])) || !(x[1] >= 0 && x[1] <= 100000) || !(x[2] >= 0 && x[2] <= 6)) f.push('Ungültige Angabe bei einem Kapitel.'); });
+  if (typeof p.n !== 'string') f.push('Name fehlt.');
+  return f.slice(0, 3);
+}
+
 async function handleToken(text) {
   const out = { ok: false, title: '', cls: 'bad', flags: [], p: null, dup: false };
   text = String(text || '').trim();
@@ -994,6 +1015,12 @@ async function handleToken(text) {
   if (age < -120) { out.title = 'Uhrzeit prüfen'; out.cls = 'warn'; out.flags = ['Das Gerät des Schülers geht vor. Bitte Datum und Uhrzeit prüfen und neu erzeugen.']; return show(out); }
   if (list.some(r => r.id === p.id)) { out.dup = true; out.title = 'Schon gescannt'; out.cls = 'warn'; out.p = p; out.flags = ['Dieser Code wurde bereits gelesen. Jeder Code zählt nur einmal.']; return show(out); }
   if (p.tp && !APPS[p.tp]) { out.title = 'Unbekannte App'; out.cls = 'warn'; out.flags = ['Dieser Code stammt von einer App, die diese Prüf-App nicht kennt (' + String(p.tp).slice(0, 20) + ').']; return show(out); }
+  if (p.tp === 'karte') {
+    out.flags = karteFlags(p); out.ok = out.flags.length === 0; out.title = out.ok ? 'Plausibel' : 'Auffällig'; out.cls = out.ok ? 'good' : 'warn';
+    const cc = karteCounts(p);
+    list.unshift({ id: p.id, tp: 'karte', t: Date.now(), n: String(p.n || ''), r: String(p.r || ''), k: String(p.k || ''), x: cc.xp, l: 0, w: 0, ro: 0, s: '------', ls: '000000', st: 0, ch: [], f: out.flags, kc: cc });
+    lsSet(LIST_STORE, list); show(out); renderList(); return;
+  }
   out.flags = plausibility(p);
   out.ok = out.flags.length === 0;
   out.title = out.ok ? 'Plausibel' : 'Auffällig';
@@ -1014,9 +1041,15 @@ function show(o) {
   if (o.p) {
     const p = o.p;
     who.textContent = (p.r ? p.r + ' \u00B7 ' : '') + p.n + (p.k ? ' \u00B7 ' + p.k : '');
+    if (p.tp === 'karte') {
+      const cc = karteCounts(p);
+      tb.append(row('App', 'Lernlandkarte'), row('Selbsteinschätzung', 'Sicher ' + cc.g + ', Fast ' + cc.y + ', Noch nicht ' + cc.r + ', offen ' + cc.o), row('Kapitel gestartet', String(cc.started)), row('Punkte gesamt', cc.xp + ' XP'), row('Bestandene Stationen', String(cc.passed)),
+        row('Kapitel', (p.c || []).map(x => String(x[0]).replace('_', '.') + ': ' + x[1] + ' XP, ' + x[2] + ' von 6').join('; ') || 'keine'));
+    } else {
     tb.append(row('App', appOf(p).name), row('Punkte gesamt', p.x + ' XP'), row('Stufe', p.l + ' ' + (appOf(p).levels[p.l - 1] || '')), row('Punkte diese Woche', p.w + ' XP'), row('Runden gespielt', String(p.ro)),
       row('Sterne Station 1 bis 6', typeof p.s === 'string' ? starsText(p.s) : '?'), row('Lektionen gelesen', typeof p.ls === 'string' ? p.ls.split('').filter(c => c === '1').length + ' von 6' : '?'),
       row('Serie', p.st + ' Tage'), row('Challenges', (p.ch || []).map(c => c[0] + ': ' + c[1] + ' von 6 in ' + c[2] + ' s').join('; ') || 'keine'));
+    }
   } else who.textContent = '';
   o.flags.forEach(t => { const li = document.createElement('li'); li.textContent = t; fl.append(li); });
   c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
@@ -1029,7 +1062,7 @@ function renderList() {
   $('lcount').textContent = list.length ? list.length + ' Ergebnisse gespeichert' : 'Noch keine Ergebnisse.';
   list.forEach((r, i) => {
     const tr = document.createElement('tr');
-    const cells = [(r.r || '\u2013'), r.n, (APPS[r.tp] || APPS.leistung).name, r.k || '\u2013', r.x + ' XP', String(r.l), r.f.length ? 'auffällig' : 'plausibel'];
+    const cells = [(r.r || '\u2013'), r.n, (APPS[r.tp] || APPS.leistung).name, r.k || '\u2013', r.x + ' XP', String(r.tp === 'karte' ? (r.kc ? r.kc.g + ' sicher' : '–') : r.l), r.f.length ? 'auffällig' : 'plausibel'];
     cells.forEach((t, j) => { const td = document.createElement('td'); td.textContent = t; if (j === 6) td.className = r.f.length ? 'tw' : 'tg'; tr.append(td); });
     const td = document.createElement('td'), b = document.createElement('button');
     b.className = 'btn sm'; b.textContent = 'Entfernen'; b.setAttribute('data-del', i); td.append(b); tr.append(td); body.append(tr);
@@ -1039,7 +1072,7 @@ function renderList() {
 const csvCell = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
 function exportCsv() {
   const head = ['Zeit', 'App', 'Name', 'Zufallsname', 'Klasse', 'XP', 'Stufe', 'XP diese Woche', 'Runden', 'Sterne S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'Lektionen gelesen', 'Serie (Tage)', 'Hinweise'];
-  const rows = list.map(r => [new Date(r.t).toLocaleString('de-CH'), (APPS[r.tp] || APPS.leistung).name, r.r, r.n, r.k, r.x, r.l, r.w, r.ro, ...r.s.split('').map(c => (c === '-' ? '\u2013' : c)), r.ls.split('').filter(c => c === '1').length, r.st, r.f.join(' | ')]);
+  const rows = list.map(r => [new Date(r.t).toLocaleString('de-CH'), (APPS[r.tp] || APPS.leistung).name, r.r, r.n, r.k, r.x, r.l, r.w, r.ro, ...r.s.split('').map(c => (c === '-' ? '\u2013' : c)), r.ls.split('').filter(c => c === '1').length, r.st, (r.tp === 'karte' && r.kc ? ['Sicher ' + r.kc.g + ', Fast ' + r.kc.y + ', Noch nicht ' + r.kc.r].concat(r.f) : r.f).join(' | ')]);
   const csv = '\ufeff' + [head, ...rows].map(r => r.map(csvCell).join(';')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

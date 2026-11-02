@@ -1,6 +1,6 @@
-# Lern-Apps (Leistung und Motor): Einrichtung mit Klassenwertung und QR-Prüfung
+# Lern-Apps Natur und Technik: Einrichtung mit Klassenwertung und QR-Prüfung
 
-Das Projekt enthält die **Lernlandkarte** (`nut.html`, Selbsteinschätzung zu allen 26 Kompetenzen des NuT-Lehrplans, braucht weder Datenbank noch Schlüssel) und zwanzig Lern-Apps: **Leistung** (`index.html`), **Motor: Elektromotor und Generator** (`motor.html`) und **7_4 Bewegungen erkunden** (`7_4_Bewegungen_erkunden.html`) **7_1 Naturwissenschaften erkunden** (`7_1_Naturwissenschaften_erkunden.html`), **7_5 Energie erkunden** (`7_5_Energie_erkunden.html`), **7_7 Chemische Reaktionen untersuchen** (`7_7_Chemische_Reaktionen_untersuchen.html`) **8_1 Stromkreise untersuchen** (`8_1_Stromkreise_untersuchen.html`) , **7_3 Reize und Sinne untersuchen** (`7_3_Reize_und_Sinne_untersuchen.html`), **8_5 Kräfte, Arbeit und Leistung erforschen** (`8_5_Kraefte_Arbeit_und_Leistung_erforschen.html`), **8_2 Gewässer-Ökosysteme erforschen** (`8_2_Gewaesser_Oekosysteme_erforschen.html`) und **8_3 Funktionen des Körpers analysieren** (`8_3_Funktionen_des_Koerpers_analysieren.html`). Die Lern-Apps (pro NaTech-Kapitel eine App) teilen sich Datenbank, `config.js` und Prüf-App. Die Punkte der Apps bleiben getrennt.
+Das Projekt enthält die **Lernlandkarte** (`index.html`, die Startseite: Selbsteinschätzung zu allen 26 Kompetenzen des NuT-Lehrplans 21 mit Links zu den Lern-Apps), die **Startseite mit allen Kapiteln** (`lernapp.html`), die **Prüf-App** (`pruefen.html`) und zwanzig Lern-Apps zu den Kapiteln 7_1 bis 9_8 des Lehrmittels. Die frühere Adresse `nut.html` leitet auf die Lernlandkarte weiter. Die Apps «Leistung» und «Motor» sind nicht mehr im Projekt, weil sie nicht zu den Kapiteln des Lehrplans 21 gehören.
 
 Du brauchst nur dein GitHub-Konto. Kosten: 0 CHF. Zeitbedarf: etwa 45 Minuten für Teil 1 bis 3, danach 10 Minuten für Teil 4.
 Die Menünamen bei GitHub und Supabase ändern sich gelegentlich. Wenn etwas anders heisst, such nach dem fettgedruckten Stichwort.
@@ -22,10 +22,10 @@ Die Klassenwertung (Teil 1 und 2) und die QR-Prüfung (Teil 4) sind unabhängig 
 
 1. Entpacke das ZIP auf deinem Computer.
 2. Auf **github.com**: **New repository**, Name `leistung-lernapp`, Sichtbarkeit **Public**, erstellen.
-3. Klicke **uploading an existing file** und ziehe alle Dateien und Ordner aus dem entpackten Ordner hinein (`index.html`, `motor.html`, `7_4_Bewegungen_erkunden.html`, `7_1_Naturwissenschaften_erkunden.html`, `7_5_Energie_erkunden.html`, `7_7_Chemische_Reaktionen_untersuchen.html`, `8_1_Stromkreise_untersuchen.html`, `7_3_Reize_und_Sinne_untersuchen.html`, `8_5_Kraefte_Arbeit_und_Leistung_erforschen.html`, `nut.html`, `pruefen.html`, `config.js`, `logo.png`, Ordner `fonts` und `vendor`). Dann **Commit changes**.
+3. Klicke **uploading an existing file** und ziehe alle Dateien und Ordner aus dem entpackten Ordner hinein (`index.html`, `lernapp.html`, `7_4_Bewegungen_erkunden.html`, `7_1_Naturwissenschaften_erkunden.html`, `7_5_Energie_erkunden.html`, `7_7_Chemische_Reaktionen_untersuchen.html`, `8_1_Stromkreise_untersuchen.html`, `7_3_Reize_und_Sinne_untersuchen.html`, `8_5_Kraefte_Arbeit_und_Leistung_erforschen.html`, `nut.html`, `pruefen.html`, `config.js`, `logo.png`, Ordner `fonts` und `vendor`). Dann **Commit changes**.
 4. Öffne `config.js`, klicke auf den Stift und trage Project URL und Schlüssel zwischen die Anführungszeichen ein. **Commit changes**.
 5. **Settings**, dann **Pages**: Quelle **Deploy from a branch**, Branch `main`, Ordner `/ (root)`, **Save**. Nach ein bis zwei Minuten steht oben die Adresse, ungefähr `https://DEINNAME.github.io/leistung-lernapp/`.
-6. Öffne die Adresse auf deinem Handy. Es sollte die Karte «Meine Klasse» erscheinen. Die Motor-App liegt unter `https://DEINNAME.github.io/leistung-lernapp/motor.html`.
+6. Öffne die Adresse auf deinem Handy. Es sollte die Lernlandkarte erscheinen. Die Kapitelübersicht liegt unter `https://DEINNAME.github.io/leistung-lernapp/lernapp.html`.
 
 ## Teil 3: Im Unterricht
 
@@ -114,6 +114,11 @@ Zusätzlich zur Klassenwertung gibt es zwei Ansichten. Beide erscheinen in der K
 
 Für NaTech 9 (9_1 bis 9_8) lagen keine Lehrerkommentare vor. Diese acht Apps sind nach den Themenbüchern gebaut: `9_1_Optische_Phaenomene_erkunden.html`, `9_2_Atommodelle_nutzen.html`, `9_3_Elektronische_Schaltungen_untersuchen.html`, `9_4_Energie_und_Leistung_erfassen.html`, `9_5_Genetik_und_Gentechnik_verstehen.html`, `9_6_Evolution_nachvollziehen.html`, `9_7_Land_Oekosysteme_erforschen.html`, `9_8_Stoffkreislaeufe_erkunden.html`. Die Aufgaben sind eigene Formulierungen. Bitte prüfe sie fachlich, besonders die Modell-Experimente mit Beispielwerten.
 
-## Noch nicht enthalten
+## Nach dem Lehrerkommentar
 
-- 7_2 und 7_6: Die Lehrerkommentare liegen nur als Scan vor.
+7_2 Den Körper analysieren (`7_2_Den_Koerper_analysieren.html`) und 7_6 Arbeiten im Labor (`7_6_Arbeiten_im_Labor.html`) sind nach den hochgeladenen Lehrerkommentaren gebaut. In 7_2 sind die Inhalte zu Zyklus und Verhütung sachlich nach dem Kommentar formuliert, mit Hinweis auf Fachstellen. In 8_3 ist das Unterkapitel zu sexuell übertragbaren Infektionen enthalten.
+
+
+## QR-Code für den Lernstand auf der Lernlandkarte
+
+Unten auf der Lernlandkarte gibt es die Karte «QR-Code für die Lehrperson». Sie erscheint nur, wenn in `config.js` der `teacherKey` eingetragen ist. Der Code enthält die Ampel-Selbsteinschätzung und den Fortschritt in den gestarteten Kapiteln, verschlüsselt für deine Prüf-App. Name und Klassencode sind freiwillig; fehlen sie, werden sie aus den Kapitel-Apps übernommen. Der Code gilt zehn Minuten und wird in der Prüf-App nur einmal akzeptiert. Die Prüf-App zeigt Ampel-Zahlen, gestartete Kapitel und Punkte an und nimmt den Eintrag in die CSV-Liste auf.

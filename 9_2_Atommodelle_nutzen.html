@@ -579,9 +579,9 @@ h1, h2, h3, .top h1, .row h2, .sumh, .lh, .st h3, .review h3, .clsc h3, .chal h3
 .amp.r .dotc { background: var(--pop-pink); } .amp.y .dotc { background: var(--pop-yellow); } .amp.g .dotc { background: var(--pop-green); }
 .amp[aria-pressed="true"] { border-color: var(--line); box-shadow: 0 3px 0 var(--line); font-weight: 900; }
 .amp.r[aria-pressed="true"] { background: var(--bad-bg); } .amp.y[aria-pressed="true"] { background: var(--warn-bg); } .amp.g[aria-pressed="true"] { background: var(--good-bg); }
-.lp { margin-top: var(--space-2); }
-.lp summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
-.lp p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
+.lptext { margin-top: var(--space-2); }
+.lptext summary { cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--muted); }
+.lptext p { margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--muted); }
 .chips .btn.on { background: var(--primary); color: var(--on-primary); }
 @media (max-width: 380px) { .amp { font-size: var(--text-xs); } .dotc { display: none; } }
 
@@ -788,6 +788,10 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 .base { flex: none; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--line); border-radius: 8px; font-weight: 800; background: var(--surface); }
 .base.bA { background: var(--pop-yellow); } .base.bT { background: var(--pop-cyan); } .base.bG { background: var(--pop-pink); } .base.bC { background: var(--pop-green); }
 .base.leer { opacity: .55; }
+
+/* Lernlandkarte: QR-Code */
+.qfields { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
+.qin { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
 </style>
 </head>
 <body>
@@ -2129,7 +2133,7 @@ function viewHome() {
     ${state.introDone ? '' : introCard()}
     <div class="path">${cards}${rev}${classCard()}${qrCard()}${chal}</div>
     <footer class="foot">
-      ${'weeklyGoalPerPlayer' in CFG ? `<p class="small"><a href="lernapp.html">Alle Kapitel</a> \u00B7 <a href="nut.html">Lernlandkarte NuT</a>${TOPIC.other ? ` \u00B7 Weitere App: <a href="${TOPIC.other.href}">${TOPIC.other.title}</a>` : ''}</p>` : ''}
+      ${'weeklyGoalPerPlayer' in CFG ? `<p class="small"><a href="lernapp.html">Alle Kapitel</a> \u00B7 <a href="index.html">Lernlandkarte</a>${TOPIC.other ? ` \u00B7 Weitere App: <a href="${TOPIC.other.href}">${TOPIC.other.title}</a>` : ''}</p>` : ''}
       <p class="small">Dein Fortschritt wird nur auf diesem Gerät im Browser gespeichert${memoryOnly ? ' (Speichern ist hier gerade nicht möglich, der Fortschritt geht beim Schliessen verloren)' : ''}. Der Zufallsname ist nirgends sonst hinterlegt.</p>
       <button class="btn sm" data-act="reset">${ui.confirmReset ? 'Sicher? Nochmals tippen zum Löschen' : 'Fortschritt zurücksetzen'}</button>
     </footer>
