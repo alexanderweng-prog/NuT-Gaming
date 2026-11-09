@@ -792,12 +792,25 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 /* Lernlandkarte: QR-Code */
 .qfields { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
 .qin { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+
+/* Audio (Vorlesen) */
+.audio { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); border-top: 2px dashed var(--line-soft); padding-top: var(--space-3); }
+.audio .watti.mini2 { --w: 34px; animation: none; }
+.watti.talk { animation: hop .5s ease-in-out infinite; }
+.savec { background: var(--subtle); }
+.savec h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); margin: 4px 0 6px; }
+.savec h4 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md, 1rem); margin: var(--space-4) 0 var(--space-2); }
+.filebtn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.scanvid { display: block; width: 100%; max-width: 340px; margin: var(--space-3) auto; border: 3px solid var(--line); border-radius: 14px; background: #000; }
+.savebox { margin-top: var(--space-3); }
+textarea.qin { padding: 10px 12px; min-height: 80px; resize: vertical; margin-bottom: var(--space-3); word-break: break-all; font-size: var(--text-sm); }
 </style>
 </head>
 <body>
 <div id="app"><noscript><main class="wrap"><p>Diese Lern-App braucht JavaScript.</p></main></noscript></div>
 <script src="config.js"></script>
 <script src="vendor/qrcode.js"></script>
+<script src="vendor/jsQR.js"></script>
 <script>
 (function () {
 'use strict';
@@ -1340,6 +1353,172 @@ function qrCardHtml() {
     <div id="qrout" aria-live="polite"></div>
   </article>`;
 }
+/* ---------- Lernstand sichern und laden (QR-Code, ohne Server) ---------- */
+const SAVE_PREFIX = 'NUTSTAND1.';
+const TROPH_IDS = ['start', 'lektion', 'lektionen', 'perfekt', 'perfekt3', 'stern3', 'alle1', 'alle3', 'serie3', 'serie7', 'stufe3', 'stufe6', 'auffrischen', 'challenge', 'challenge6', 'klasse', 'runden10'];
+const STL = { '7_1': 'w', '7_2': 'k', '7_3': 'r', '7_4': 'b', '7_5': 'e', '7_6': 'r', '7_7': 'c', '8_1': 'k', '8_2': 'g', '8_3': 'h', '8_4': 'q', '8_5': 'f', '9_1': 'o', '9_2': 'a', '9_3': 'e', '9_4': 'n', '9_5': 'g', '9_6': 'v', '9_7': 'l', '9_8': 's' };
+const saveAvailable = () => !!(window.qrcode && typeof btoa === 'function');
+const scanAvailable = () => typeof window.jsQR === 'function';
+const chapCode = href => { const m = /^(\d)_(\d)_/.exec(href); return m ? m[1] + '_' + m[2] : null; };
+const chapStoreKey = code => 'halingen-nt' + code.replace('_', '-') + '-v1';
+const ampMap = { r: '1', y: '2', g: '3' }, ampBack = { '1': 'r', '2': 'y', '3': 'g' };
+const ampString = () => DATA.map(b => b.komp.map(k => ampMap[state.amp[k.code]] || '0').join('')).join('');
+function saveHash(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36).padStart(6, '0').slice(-6); }
+const b64enc = t => btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64dec = t => atob(t.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((t.length + 3) % 4));
+function saveCollect() {
+  const c = {};
+  APPS.forEach(ap => {
+    const code = chapCode(ap.href), L = code && STL[code], s = L && chapState(ap); if (!s) return;
+    const idx = [1, 2, 3, 4, 5, 6];
+    const stars = idx.map(i => Math.min(3, Math.max(0, Math.floor((s.stars && s.stars[L + i]) || 0)))).join('');
+    const les = idx.map(i => (s.lessons && s.lessons[L + i]) ? '1' : '0').join('');
+    let mask = 0; TROPH_IDS.forEach((id, i) => { if (s.trophies && s.trophies[id]) mask |= (1 << i); });
+    const xp = Math.max(0, Math.round(s.xp || 0));
+    if (!xp && !mask && stars === '000000' && les === '000000' && !s.rounds) return;
+    c[code] = [xp, stars, les, mask.toString(36), Math.floor(s.perfect || 0), Math.floor(s.reviews || 0), Math.floor(s.rounds || 0)];
+  });
+  return { v: 1, a: ampString(), c };
+}
+const saveToken = () => { const body = b64enc(JSON.stringify(saveCollect())); return SAVE_PREFIX + body + '.' + saveHash(body); };
+function saveParse(text) {
+  const t = String(text || '').replace(/\s+/g, '');
+  if (t.indexOf(SAVE_PREFIX) !== 0) return { err: 'Das ist kein Lernstand-Code dieser App.' };
+  const parts = t.slice(SAVE_PREFIX.length).split('.');
+  if (parts.length !== 2 || saveHash(parts[0]) !== parts[1]) return { err: 'Der Code ist beschädigt oder unvollständig.' };
+  let p; try { p = JSON.parse(b64dec(parts[0])); } catch (e) { return { err: 'Der Code konnte nicht gelesen werden.' }; }
+  if (!p || p.v !== 1 || !p.c || typeof p.c !== 'object') return { err: 'Der Code stammt aus einer anderen Version.' };
+  const out = {}; let xp = 0, tr = 0;
+  Object.keys(p.c).forEach(code => {
+    const r = p.c[code], app = STL[code] && APPS.find(a => chapCode(a.href) === code);
+    if (!app || !Array.isArray(r)) return;
+    const n = (v, max) => Math.min(max, Math.max(0, Math.floor(Number(v) || 0)));
+    const stars = /^[0-3]{6}$/.test(r[1]) ? r[1] : '000000', les = /^[01]{6}$/.test(r[2]) ? r[2] : '000000';
+    const mask = n(parseInt(r[3], 36), (1 << TROPH_IDS.length) - 1);
+    out[code] = { xp: n(r[0], 100000), stars, les, mask, perfect: n(r[4], 9999), reviews: n(r[5], 9999), rounds: n(r[6], 9999) };
+    xp += out[code].xp; tr += TROPH_IDS.filter((id, i) => mask & (1 << i)).length;
+  });
+  const keys = Object.keys(out);
+  if (!keys.length) return { err: 'In diesem Code steckt noch kein Fortschritt.' };
+  const total = DATA.reduce((a, b) => a + b.komp.length, 0);
+  return { p: { c: out, a: (typeof p.a === 'string' && p.a.length === total && /^[0-3]+$/.test(p.a)) ? p.a : '' }, chapters: keys.length, xp, tr };
+}
+function saveApply(p) {
+  Object.keys(p.c).forEach(code => {
+    const r = p.c[code], key = chapStoreKey(code), L = STL[code];
+    let s = {}; try { const raw = localStorage.getItem(key); if (raw) s = JSON.parse(raw) || {}; } catch (e) { s = {}; }
+    s.xp = Math.max(s.xp || 0, r.xp); s.perfect = Math.max(s.perfect || 0, r.perfect); s.reviews = Math.max(s.reviews || 0, r.reviews); s.rounds = Math.max(s.rounds || 0, r.rounds);
+    s.stars = s.stars || {}; s.lessons = s.lessons || {}; s.trophies = s.trophies || {}; s.trophySeen = s.trophySeen || {};
+    for (let i = 0; i < 6; i++) {
+      s.stars[L + (i + 1)] = Math.max(s.stars[L + (i + 1)] || 0, +r.stars[i]);
+      if (!s.stars[L + (i + 1)]) delete s.stars[L + (i + 1)];
+      if (r.les[i] === '1') s.lessons[L + (i + 1)] = true;
+    }
+    TROPH_IDS.forEach((id, i) => { if ((r.mask & (1 << i)) && !s.trophies[id]) { s.trophies[id] = Date.now(); s.trophySeen[id] = Date.now(); } });
+    s.introDone = true;
+    try { localStorage.setItem(key, JSON.stringify(s)); } catch (e) { memoryOnly = true; }
+  });
+  if (p.a) {
+    let i = 0;
+    DATA.forEach(b => b.komp.forEach(k => { const ch = ampBack[p.a[i++]]; if (ch && !state.amp[k.code]) state.amp[k.code] = ch; }));
+    save();
+  }
+}
+let savePending = null, lastToken = '', scanStream = null, scanRaf = 0;
+function saveMsg(html) { const el = $id('saveload'); if (el) el.innerHTML = html; }
+function saveShowPreview(res) {
+  savePending = res.p;
+  saveMsg(`<div class="savebox"><p><b>Lernstand gefunden:</b> ${res.chapters} ${res.chapters === 1 ? 'Kapitel' : 'Kapitel'}, ${res.xp} XP, ${res.tr} Pokale.</p><p class="small">Beim Laden werden Werte nur erhöht, nie gesenkt. Was du schon auf diesem Gerät hast, bleibt erhalten.</p><button class="btn btn-primary block" data-act="saveapply">Jetzt laden</button></div>`);
+}
+function saveHandle(text, quiet) {
+  const res = saveParse(text);
+  if (res.err) { if (!quiet) saveMsg(`<p class="errtxt">${res.err}</p>`); return false; }
+  saveShowPreview(res); return true;
+}
+function saveMake() {
+  const out = $id('saveout'); if (!out) return;
+  try {
+    lastToken = saveToken();
+    const q = window.qrcode(0, 'L'); q.addData(lastToken); q.make();
+    const n = Object.keys(saveCollect().c).length;
+    out.innerHTML = `<div class="qrbox" id="saveqr" role="img" aria-label="QR-Code mit deinem Lernstand">${q.createSvgTag({ cellSize: 4, margin: 4, scalable: true })}</div><p class="small">Dieser Code enthält deinen Stand aus ${n} ${n === 1 ? 'Kapitel' : 'Kapiteln'} und deine Ampel. Mache einen Screenshot oder halte ihn vor die Kamera des anderen Geräts. Er ändert sich nicht und bleibt gültig.</p><div class="btnrow"><button class="btn sm" data-act="savecopy">Code als Text kopieren</button><button class="btn sm" data-act="savepng">Als Bild speichern</button></div><p class="small" id="savemsg" aria-live="polite"></p>`;
+  } catch (e) { out.innerHTML = '<p class="errtxt">Der Code konnte nicht erzeugt werden. Vermutlich ist dein Stand zu gross für einen QR-Code.</p>'; }
+}
+function savePng() {
+  const svg = document.querySelector('#saveqr svg'), msg = $id('savemsg'); if (!svg) return;
+  try {
+    const xml = new XMLSerializer().serializeToString(svg), img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas'); c.width = c.height = 640; const x = c.getContext('2d');
+        x.fillStyle = '#fff'; x.fillRect(0, 0, 640, 640); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, 640, 640);
+        c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'lernstand.png'; document.body.appendChild(a); a.click(); a.remove(); }, 'image/png');
+      } catch (e) { if (msg) msg.textContent = 'Das Bild konnte nicht gespeichert werden. Mache einen Screenshot.'; }
+    };
+    img.onerror = () => { if (msg) msg.textContent = 'Das Bild konnte nicht gespeichert werden. Mache einen Screenshot.'; };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+  } catch (e) { if (msg) msg.textContent = 'Das Bild konnte nicht gespeichert werden. Mache einen Screenshot.'; }
+}
+function scanStop() {
+  if (scanRaf) { cancelAnimationFrame(scanRaf); scanRaf = 0; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  const v = $id('scanvid'); if (v) { v.srcObject = null; v.hidden = true; }
+  const b = $id('scanbtn'); if (b) b.textContent = 'Mit Kamera scannen';
+}
+async function scanStart() {
+  if (scanStream) { scanStop(); return; }
+  if (!scanAvailable() || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { saveMsg('<p class="errtxt">Die Kamera ist hier nicht verfügbar. Wähle ein Bild oder füge den Code ein.</p>'); return; }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const v = $id('scanvid'); v.srcObject = scanStream; v.hidden = false; await v.play();
+    $id('scanbtn').textContent = 'Kamera stoppen'; saveMsg('<p class="small">Halte den QR-Code ruhig vor die Kamera.</p>');
+    const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
+    const loop = () => {
+      if (!scanStream) return;
+      if (v.readyState >= 2 && v.videoWidth) {
+        const sc = Math.min(1, 720 / v.videoWidth); cv.width = Math.round(v.videoWidth * sc); cv.height = Math.round(v.videoHeight * sc);
+        cx.drawImage(v, 0, 0, cv.width, cv.height);
+        const d = cx.getImageData(0, 0, cv.width, cv.height), r = window.jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+        if (r && r.data && saveHandle(r.data, true)) { scanStop(); return; }
+      }
+      scanRaf = requestAnimationFrame(loop);
+    };
+    loop();
+  } catch (e) { scanStop(); saveMsg('<p class="errtxt">Kein Zugriff auf die Kamera. Erlaube sie im Browser oder wähle ein Bild.</p>'); }
+}
+function saveFromFile(file) {
+  if (!file) return;
+  if (!scanAvailable()) { saveMsg('<p class="errtxt">Das Lesen von Bildern ist hier nicht verfügbar. Füge den Code als Text ein.</p>'); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    try {
+      const sc = Math.min(1, 1200 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width * sc)); cv.height = Math.max(1, Math.round(img.height * sc));
+      const cx = cv.getContext('2d', { willReadFrequently: true }); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+      const d = cx.getImageData(0, 0, cv.width, cv.height), r = window.jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+      if (r && r.data) saveHandle(r.data); else saveMsg('<p class="errtxt">Im Bild wurde kein QR-Code gefunden. Versuche ein schärferes Bild oder füge den Code als Text ein.</p>');
+    } catch (e) { saveMsg('<p class="errtxt">Das Bild konnte nicht gelesen werden.</p>'); }
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = () => { saveMsg('<p class="errtxt">Das Bild konnte nicht gelesen werden.</p>'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+function saveCardHtml() {
+  if (!saveAvailable()) return '';
+  return `<article class="card savec">
+    <h3>Lernstand sichern und laden</h3>
+    <p class="small">Dein Fortschritt in allen Kapiteln (XP, Sterne, Pokale und abgeschlossene Lektionen) und deine Ampel werden in einen QR-Code gepackt. Damit kannst du ihn auf einem anderen Gerät oder nach dem Löschen des Browsers wieder laden. Es wird nichts hochgeladen. Nicht enthalten sind die Karten zum Auffrischen und deine Tagesserie.</p>
+    <h4>Sichern</h4>
+    <button class="btn btn-primary block" data-act="savemake">QR-Code erstellen</button>
+    <div id="saveout" aria-live="polite"></div>
+    <h4>Laden</h4>
+    ${scanAvailable() ? `<div class="btnrow"><button class="btn" id="scanbtn" data-act="scanstart">Mit Kamera scannen</button><label class="btn filebtn">Bild wählen<input type="file" accept="image/*" id="savefile" hidden></label></div><video id="scanvid" class="scanvid" hidden playsinline muted></video>` : ''}
+    <label class="small">Oder Code als Text einfügen<textarea id="savetext" class="qin" rows="3" spellcheck="false" autocomplete="off" placeholder="NUTSTAND1. …"></textarea></label>
+    <button class="btn block" data-act="saveparse">Code prüfen</button>
+    <div id="saveload" aria-live="polite"></div>
+  </article>`;
+}
+
 function build() {
   const cards = DATA.map((b, i) => `<details class="card bk" data-b="${b.nr}" style="--sc:${BCOL[i]};--i:${i}">
       <summary><span class="bnum" aria-hidden="true">${b.nr}</span><span class="btxt"><span class="tag">NT.${b.nr}</span><span class="btitle">${esc(b.titel)}</span><span class="bsegs" id="bs${b.nr}" aria-hidden="true">${b.komp.map(k => `<i data-s="${k.code}"></i>`).join('')}</span></span><span class="bcount mono" id="bc${b.nr}"></span></summary>
@@ -1358,6 +1537,7 @@ function build() {
     <div class="chips" role="group" aria-label="Filter">${[['all', 'Alle'], ['open', 'Noch nicht sicher'], ['app', 'Mit Lern-App']].map(f => `<button class="btn sm" data-act="filter" data-f="${f[0]}">${f[1]}</button>`).join('')}</div>
     <div class="path" id="bereiche">${cards}</div>
     <p class="small" id="nofit" hidden>Nichts zu zeigen mit diesem Filter.</p>
+    ${saveCardHtml()}
     ${qrCardHtml()}
     <footer class="foot">
       ${'weeklyGoalPerPlayer' in CFG ? '<p class="small"><a href="lernapp.html">Alle Kapitel mit Fortschritt</a></p>' : ''}
@@ -1401,6 +1581,17 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
   if (a === 'showqr') { showQr(); return; }
+  if (a === 'savemake') { saveMake(); return; }
+  if (a === 'savecopy') { const m = $id('savemsg'), say = t => { if (m) m.textContent = t; }; try { navigator.clipboard.writeText(lastToken).then(() => say('Code kopiert.'), () => say('Kopieren hat nicht geklappt.')); } catch (x) { say('Kopieren hat nicht geklappt.'); } return; }
+  if (a === 'savepng') { savePng(); return; }
+  if (a === 'scanstart') { scanStart(); return; }
+  if (a === 'saveparse') { const t = $id('savetext'); saveHandle(t ? t.value : ''); return; }
+  if (a === 'saveapply') {
+    if (!savePending) return;
+    saveApply(savePending); savePending = null; paint();
+    saveMsg('<div class="fb good"><div class="fbt">Lernstand geladen.</div><p class="small">Öffne ein Kapitel, um deine Pokale und Sterne zu sehen. Die Seite «Alle Kapitel mit Fortschritt» zeigt den Überblick.</p></div>');
+    return;
+  }
   if (a === 'amp') {
     const c = b.dataset.c, v = b.dataset.v;
     if (state.amp[c] === v) delete state.amp[c]; else state.amp[c] = v;
@@ -1420,6 +1611,8 @@ document.addEventListener('click', e => {
 });
 if (typeof globalThis !== 'undefined') globalThis.__hub = { DATA, APPS, PLAN };
 build();
+document.addEventListener('change', e => { if (e.target && e.target.id === 'savefile') { saveFromFile(e.target.files && e.target.files[0]); e.target.value = ''; } });
+window.addEventListener('pagehide', () => { if (typeof scanStop === 'function') scanStop(); });
 document.addEventListener('input', e => {
   if (e.target && (e.target.id === 'qname' || e.target.id === 'qklasse')) { state[e.target.id === 'qname' ? 'name' : 'klasse'] = e.target.value; save(); }
 });

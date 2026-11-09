@@ -792,6 +792,11 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 /* Lernlandkarte: QR-Code */
 .qfields { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
 .qin { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 0 12px; border: 3px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+
+/* Audio (Vorlesen) */
+.audio { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); border-top: 2px dashed var(--line-soft); padding-top: var(--space-3); }
+.audio .watti.mini2 { --w: 34px; animation: none; }
+.watti.talk { animation: hop .5s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -2168,6 +2173,7 @@ function viewRound() {
     <div class="rtop">
       <button class="btn sm" data-act="quit">Beenden</button>
       <span class="mono small">Frage ${Math.min(R.i + 1, R.queue.length)} von ${R.queue.length}</span>
+      ${TOPIC.audio ? `<button class="btn sm" id="tbtn" data-act="tonaus">${state.audioOff ? 'Ton aus' : 'Ton an'}</button>` : ''}
       <button class="btn sm" data-act="formulas">${ui.formulas ? CARD + ' zu' : CARD}</button>
     </div>
     <div class="xpbar light" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Fortschritt in dieser Runde"><div style="width:${pct}%"></div></div>
@@ -2276,6 +2282,7 @@ function viewLesson() {
       ${worked}
       ${c.sim ? '<div id="sim" class="simhost"></div>' : ''}
       ${extra}
+      ${TOPIC.audio && c.w ? `<div class="audio">${watti(46, 'happy', 'mini2')}<button class="btn sm" id="vbtn" data-act="vorlesen">${AUD.playing ? 'Stopp' : 'Vorlesen'}</button><button class="btn sm" id="tbtn" data-act="tonaus">${state.audioOff ? 'Ton aus' : 'Ton an'}</button></div>` : ''}
     </section>
     <div class="navrow">
       <button class="btn" data-act="lprev" ${L.i === 0 ? 'disabled' : ''}>Zurück</button>
@@ -2330,6 +2337,44 @@ function afterRender() {
   }
 }
 
+/* ---------- Audio (nur Themen mit TOPIC.audio): Vorlesen und Lob, Ersatz durch Browser-Stimme ---------- */
+const AUD = { el: null, tok: 0, playing: false };
+const FB_OK = [['fb-ok-1', 'Richtig, super gemacht!'], ['fb-ok-2', 'Genau so! Das sitzt.'], ['fb-ok-3', 'Stark, weiter so!']];
+function audioSetTalk(on) { document.querySelectorAll('.watti').forEach(w => w.classList.toggle('talk', on)); }
+function audioUpdateBtn() { const b = $id('vbtn'); if (b) b.textContent = AUD.playing ? 'Stopp' : 'Vorlesen'; }
+function audioStop() {
+  AUD.tok++;
+  if (AUD.el) { try { AUD.el.pause(); } catch (e) { /* egal */ } AUD.el = null; }
+  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { /* egal */ }
+  AUD.playing = false; audioSetTalk(false); audioUpdateBtn();
+}
+function audioPlay(path, text) {
+  audioStop();
+  const my = AUD.tok;
+  AUD.playing = true; audioSetTalk(true); audioUpdateBtn();
+  const fin = () => { if (my !== AUD.tok) return; AUD.el = null; AUD.playing = false; audioSetTalk(false); audioUpdateBtn(); };
+  const speak = () => {
+    if (my !== AUD.tok) return;
+    if (!text || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return fin();
+    try { const u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.onend = fin; u.onerror = fin; window.speechSynthesis.speak(u); } catch (e) { fin(); }
+  };
+  try {
+    const a = new Audio(path); AUD.el = a; a.onended = fin; a.onerror = speak;
+    const pr = a.play(); if (pr && pr.catch) pr.catch(speak);
+  } catch (e) { speak(); }
+}
+function audioLesson() {
+  const c = L.st.lesson[L.i];
+  if (c && c.w) audioPlay('audio/' + TOPIC.audio.dir + '/' + L.st.id + '-c' + L.i + '-w.mp3', c.w);
+}
+function audioPraise() {
+  if (!TOPIC.audio || state.audioOff || ui.screen !== 'round' || !R) return;
+  const q = R.queue[R.i];
+  if (!q || !q.fb || q.fb.kind !== 'good') return;
+  const f = FB_OK[Math.floor(Math.random() * FB_OK.length)];
+  audioPlay('audio/' + f[0] + '.mp3', f[1]);
+}
+
 function render(mode) {
   const app = $id('app');
   if (!app) return;
@@ -2340,6 +2385,7 @@ function render(mode) {
   app.innerHTML = `<div class="view${cls}">${html}</div>`;
   afterRender();
   if (mode === 'fb') {
+    if (TOPIC.audio) audioPraise();
     const el = document.querySelector('[data-act="next"]') || document.querySelector('.fb');
     if (el && el.scrollIntoView) el.scrollIntoView({ block: 'end', behavior: 'smooth' });
     return;
@@ -2357,6 +2403,9 @@ function render(mode) {
 /* ---------- Eingaben ---------- */
 function onAct(b) {
   const a = b.dataset.act;
+  if (a === 'vorlesen') { if (AUD.playing) audioStop(); else audioLesson(); return; }
+  if (a === 'tonaus') { state.audioOff = !state.audioOff; save(); if (state.audioOff) audioStop(); const t = $id('tbtn'); if (t) t.textContent = state.audioOff ? 'Ton aus' : 'Ton an'; return; }
+  if (TOPIC.audio) audioStop();
   if (a === 'start') startRound(b.dataset.st);
   else if (a === 'review') startRound('review');
   else if (a === 'learn') startLesson(b.dataset.st);
