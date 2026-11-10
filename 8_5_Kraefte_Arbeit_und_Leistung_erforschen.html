@@ -797,6 +797,9 @@ button, a, [data-act], input, label, summary { touch-action: manipulation; -webk
 .audio { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); border-top: 2px dashed var(--line-soft); padding-top: var(--space-3); }
 .audio .watti.mini2 { --w: 34px; animation: none; }
 .watti.talk { animation: hop .5s ease-in-out infinite; }
+.phetbox { margin-top: var(--space-3); }
+.phetframe { display: block; width: 100%; height: min(72vh, 540px); border: 3px solid var(--line); border-radius: 14px; background: #fff; margin: var(--space-3) 0; }
+.phetcred { margin-top: var(--space-2); }
 </style>
 </head>
 <body>
@@ -1376,6 +1379,27 @@ function tween(from, to, ms, cb) {
 /* ---------- Speicher ---------- */
 const KEY = TOPIC.storeKey;
 const CARD = TOPIC.cardName || 'Formelkarte';
+/* PhET-Simulationen als Zusatzkarten */
+const PHET_CARDS = [{"st": "f3", "id": "forces-and-motion-basics", "name": "Kräfte und Bewegung: Grundlagen", "h": "Simulation: Kräfte addieren", "body": "<p>Lass Personen am Seil ziehen und sieh dir die Gesamtkraft an.</p><ol><li>Lass Personen links und rechts am Seil ziehen.</li><li>Beobachte den Kraftpfeil der Gesamtkraft.</li><li>Wann bewegt sich der Wagen nicht? Begründe mit der Gesamtkraft.</li></ol>"}];
+(function () {
+  PHET_CARDS.forEach(pc => {
+    const st = STATIONS.find(x => x.id === pc.st); if (!st) return;
+    st.lesson.forEach((c, i) => { if (c.ai === undefined) c.ai = i; });
+    const last = st.lesson[st.lesson.length - 1], pos = last && last.check ? st.lesson.length - 1 : st.lesson.length;
+    st.lesson.splice(pos, 0, { h: pc.h, body: pc.body, ai: -1, sim: 'phet', phet: { id: pc.id, name: pc.name } });
+  });
+})();
+function phetSim(el, c) {
+  const p = c.phet, base = 'https://phet.colorado.edu/sims/html/' + p.id + '/latest/' + p.id + '_de.html';
+  el.innerHTML = '<div class="phetbox"><p class="small">Diese Simulation kommt von PhET und wird erst nach dem Tippen aus dem Internet geladen.</p><button class="btn btn-primary block" id="phetgo">Simulation starten</button><div id="phetframe"></div><p class="small phetcred">Simulation «' + p.name + '»: PhET Interactive Simulations, University of Colorado Boulder, <a href="https://phet.colorado.edu/de/simulations/' + p.id + '" target="_blank" rel="noopener">phet.colorado.edu</a>, Lizenz CC-BY 4.0.</p></div>';
+  const go = el.querySelector('#phetgo');
+  go.addEventListener('click', () => {
+    el.querySelector('#phetframe').innerHTML = '<iframe class="phetframe" src="' + base + '" title="' + p.name + '" allowfullscreen loading="lazy"></iframe><p class="small">Es lädt nichts? Dann ist das Internet gerade nicht erreichbar oder blockiert. <a href="' + base + '" target="_blank" rel="noopener">In neuem Tab öffnen</a>.</p>';
+    go.hidden = true;
+  });
+}
+
+if (!TOPIC.audio) TOPIC.audio = { dir: TOPIC.id };
 function defaults() { return { xp: 0, streak: 0, lastDay: null, stars: {}, items: {}, rounds: 0, lessons: {}, nick: null, challenges: {}, classCode: '', weekKey: 0, weekXp: 0, introDone: false, realName: '', trophies: {}, trophySeen: {}, perfect: 0, reviews: 0 }; }
 let memoryOnly = null;
 function load() {
@@ -2302,7 +2326,7 @@ function viewLesson() {
       ${worked}
       ${c.sim ? '<div id="sim" class="simhost"></div>' : ''}
       ${extra}
-      ${TOPIC.audio && c.w ? `<div class="audio">${watti(46, 'happy', 'mini2')}<button class="btn sm" id="vbtn" data-act="vorlesen">${AUD.playing ? 'Stopp' : 'Vorlesen'}</button><button class="btn sm" id="tbtn" data-act="tonaus">${state.audioOff ? 'Ton aus' : 'Ton an'}</button></div>` : ''}
+      ${TOPIC.audio && (c.w || cardSpeech(c)) ? `<div class="audio">${watti(46, 'happy', 'mini2')}<button class="btn sm" id="vbtn" data-act="vorlesen">${AUD.playing ? 'Stopp' : 'Vorlesen'}</button><button class="btn sm" id="tbtn" data-act="tonaus">${state.audioOff ? 'Ton aus' : 'Ton an'}</button></div>` : ''}
     </section>
     <div class="navrow">
       <button class="btn" data-act="lprev" ${L.i === 0 ? 'disabled' : ''}>Zurück</button>
@@ -2349,7 +2373,7 @@ function afterRender() {
   if (ui.anim) document.querySelectorAll('[data-w]').forEach(el => nextFrame(() => { el.style.width = el.dataset.w + '%'; }));
   if (ui.screen === 'lesson') {
     const c = L.st.lesson[L.i];
-    if (c.sim) { const host = $id('sim'); if (host && SIMS[c.sim]) SIMS[c.sim](host); }
+    if (c.sim) { const host = $id('sim'); if (host && c.sim === 'phet') phetSim(host, c); else if (host && SIMS[c.sim]) SIMS[c.sim](host); }
   }
   if (ui.screen === 'summary' && ui.anim && R && R.summary) {
     const s = R.summary;
@@ -2376,16 +2400,73 @@ function audioPlay(path, text) {
   const speak = () => {
     if (my !== AUD.tok) return;
     if (!text || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return fin();
-    try { const u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.onend = fin; u.onerror = fin; window.speechSynthesis.speak(u); } catch (e) { fin(); }
+    const parts = speechChunks(text); let k = 0;
+    const next = () => {
+      if (my !== AUD.tok) return;
+      if (k >= parts.length) return fin();
+      try { const u = new SpeechSynthesisUtterance(parts[k++]); u.lang = 'de-DE'; u.onend = next; u.onerror = fin; window.speechSynthesis.speak(u); } catch (e) { fin(); }
+    };
+    next();
   };
+  if (!path) { speak(); return; }
   try {
     const a = new Audio(path); AUD.el = a; a.onended = fin; a.onerror = speak;
     const pr = a.play(); if (pr && pr.catch) pr.catch(speak);
   } catch (e) { speak(); }
 }
+const SP_SUB = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+const SP_UNITS = { 'kWh': 'Kilowattstunden', 'kJ': 'Kilojoule', 'kW': 'Kilowatt', 'MW': 'Megawatt', 'mW': 'Milliwatt', 'W': 'Watt', 'J': 'Joule', 'kN': 'Kilonewton', 'N': 'Newton', 'kV': 'Kilovolt', 'mV': 'Millivolt', 'V': 'Volt', 'mA': 'Milliampere', 'A': 'Ampere', 'kΩ': 'Kiloohm', 'Ω': 'Ohm', 'kHz': 'Kilohertz', 'Hz': 'Hertz', 'hPa': 'Hektopascal', 'Pa': 'Pascal', 'mol': 'Mol', 'kg': 'Kilogramm', 'mg': 'Milligramm', 'g': 'Gramm', 'km/h': 'Kilometer pro Stunde', 'm/s': 'Meter pro Sekunde', 'km': 'Kilometer', 'dm': 'Dezimeter', 'cm': 'Zentimeter', 'mm': 'Millimeter', 'm': 'Meter', 'mL': 'Milliliter', 'ml': 'Milliliter', 'L': 'Liter', 'min': 'Minuten', 's': 'Sekunden', 'h': 'Stunden', 'kcal': 'Kilokalorien' };
+const SP_UNIT_RE = new RegExp('(\\d(?:[.,]\\d+)?)\\s*(' + Object.keys(SP_UNITS).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&')).join('|') + ')(?![A-Za-zÄÖÜäöüß0-9])', 'g');
+function speechClean(html) {
+  let t = String(html || '');
+  t = t.replace(/<\s*br\s*\/?>/gi, '. ').replace(/<\/(p|li|div|h\d|tr)>/gi, '. ').replace(/<\/(td|th)>/gi, ', ');
+  t = t.replace(/<sub>\s*([0-9]+)\s*<\/sub>/gi, (m, d) => ' ' + [...d].map(x => SP_SUB[+x]).join(' ') + ' ');
+  t = t.replace(/<sup>\s*([^<]*)<\/sup>/gi, (m, d) => ' hoch ' + d.replace(/[−-]/g, 'minus ').replace(/\+/g, 'plus ') + ' ');
+  t = t.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, 'und').replace(/&lt;/g, ' kleiner als ').replace(/&gt;/g, ' grösser als ').replace(/&[a-z]+;/g, ' ');
+  t = t.replace(/(km|dm|cm|mm|m)²/g, (m, u) => 'Quadrat' + ({ km: 'kilometer', dm: 'dezimeter', cm: 'zentimeter', mm: 'millimeter', m: 'meter' })[u]).replace(/(km|dm|cm|mm|m)³/g, (m, u) => 'Kubik' + ({ km: 'kilometer', dm: 'dezimeter', cm: 'zentimeter', mm: 'millimeter', m: 'meter' })[u]);
+  t = t.replace(/(^|[^\d,.])1\/(\d+)\b/g, (m, p, d) => p + ({ 2: 'ein Halb', 3: 'ein Drittel', 4: 'ein Viertel', 5: 'ein Fünftel', 6: 'ein Sechstel', 8: 'ein Achtel', 10: 'ein Zehntel' }[d] || ('1 geteilt durch ' + d))).replace(/(\d+)\/(\d+)/g, '$1 geteilt durch $2');
+  t = t.replace(/[₀-₉]+/g, m => ' ' + [...m].map(ch => SP_SUB[ch.charCodeAt(0) - 0x2080]).join(' ') + ' ');
+  t = t.replace(/⁻([¹²³⁰⁴-⁹])/g, ' hoch minus $1').replace(/⁻/g, ' minus ').replace(/⁺/g, ' plus ');
+  t = t.replace(/[¹²³⁰⁴-⁹]+/g, m => ' hoch ' + [...m].map(ch => ({ '¹': 'eins', '²': 'zwei', '³': 'drei', '⁰': 'null', '⁴': 'vier', '⁵': 'fünf', '⁶': 'sechs', '⁷': 'sieben', '⁸': 'acht', '⁹': 'neun' }[ch] || '')).join(' ') + ' ');
+  t = t.replace(/°\s*C/g, ' Grad Celsius').replace(/°/g, ' Grad ');
+  t = t.replace(SP_UNIT_RE, (m, n, u) => { let w = SP_UNITS[u]; if (n === '1') w = ({ Sekunden: 'Sekunde', Minuten: 'Minute', Stunden: 'Stunde', Kilowattstunden: 'Kilowattstunde' })[w] || w; return n + ' ' + w; });
+  t = t.replace(/\bkm\/h\b/g, 'Kilometer pro Stunde').replace(/\bm\/s\b/g, 'Meter pro Sekunde');
+  t = t.replace(/Ω/g, ' Ohm ');
+  t = t.replace(/\bMrd\./g, 'Milliarden').replace(/\bMio\./g, 'Millionen').replace(/\bTsd\./g, 'Tausend').replace(/\bbzw\./g, 'beziehungsweise').replace(/\bz\. ?B\./g, 'zum Beispiel').replace(/\busw\./g, 'und so weiter').replace(/\bca\./g, 'circa');
+  t = t.replace(/(^|[\s(])\+(\d)/g, '$1plus $2');
+  t = t.replace(/\b(Newton|N)\s*\/\s*kg\b/g, 'Newton pro Kilogramm').replace(/\b(Joule|J)\s*\/\s*s\b/g, 'Joule pro Sekunde');
+  t = t.replace(/ρ/g, ' Rho ').replace(/(Gramm|Kilogramm|g|kg)\s*\/\s*(Kubik\w+|Milliliter|Liter|cm³)/g, (m, a, b) => ({ g: 'Gramm', kg: 'Kilogramm' }[a] || a) + ' pro ' + b).replace(/\bMasse\s*:\s*Volumen/g, 'Masse geteilt durch Volumen');
+  t = t.replace(/\s*\((J|kJ|kWh|kcal|W|kW|N|V|A)\)/g, '');
+  t = t.replace(/\bkcal\b/g, 'Kilokalorien').replace(/\bkJ\b/g, 'Kilojoule').replace(/\bkWh\b/g, 'Kilowattstunden').replace(/(^|[\s(,])J(?=[\s,.;)]|$)/g, '$1Joule');
+  t = t.replace(/(\d)\s*[–-]\s*(\d)/g, '$1 bis $2').replace(/ ½ /g, ' ein Halb ').replace(/½/g, ' ein Halb ').replace(/¼/g, ' ein Viertel ').replace(/¾/g, ' drei Viertel ');
+  t = t.replace(/[·×]/g, ' mal ').replace(/[^.]*[→⟶][^.]*/g, seg => /Ausgangsstoff|Reaktion|Schema|Produkt|erbrenn|reagier/.test(seg) ? seg.replace(/[→⟶]/g, ' reagieren zu ') : (seg.indexOf(' + ') >= 0 ? seg.replace(/[→⟶]/g, ' ergibt ') : seg.replace(/[→⟶]/g, ' dann '))).replace(/↔/g, ' entspricht ').replace(/⇌/g, ' im Gleichgewicht mit ').replace(/α'/g, 'Alpha Strich').replace(/α/g, 'Alpha').replace(/β/g, 'Beta').replace(/γ/g, 'Gamma').replace(/Δ/g, 'Delta ').replace(/≈/g, ' ungefähr ').replace(/≠/g, ' ungleich ').replace(/≤/g, ' kleiner oder gleich ').replace(/≥/g, ' grösser oder gleich ').replace(/±/g, ' plus minus ');
+  t = t.replace(/\s=\s/g, ' gleich ').replace(/=/g, ' gleich ').replace(/\s\+\s/g, ' plus ').replace(/\s[−–]\s/g, ' minus ').replace(/−/g, ' minus ').replace(/%/g, ' Prozent');
+  t = t.replace(/\(\s*NT\.[^)]*\)/g, ' ');
+  t = t.replace(/[★☆✓✔✗✘•▶►◆■□]/g, ' ').replace(/(\S)\s+:\s+(?=\d)/g, '$1 geteilt durch ').replace(/(gleich)\s+([A-Za-zÄÖÜäöü0-9]{1,4})\s+:\s+([A-Za-zÄÖÜäöü0-9]{1,4})(?=[\s.,;)]|$)/g, '$1 $2 geteilt durch $3').replace(/(^|[\s(])([A-Za-zÄÖÜäöü0-9]{1,4})\s+:\s+([A-Za-zÄÖÜäöü0-9]{1,4})(?=[\s.,;)]|$)(?!\s*(?:=|gleich))/g, '$1$2 geteilt durch $3').replace(/\.\s*!\s+/g, '. ').replace(/(^|\s)!\s+/g, ' ').replace(/(\d)\.(\d)/g, '$1,$2');
+  t = t.replace(/[«»„“”"]/g, ' ').replace(/\s+/g, ' ').replace(/\s+([.,;:!?)])/g, '$1').replace(/([.!?:])(\s*[.,;:])+/g, '$1').replace(/^[\s.]+/, '').trim();
+  return t;
+}
+function speechChunks(text) {
+  const sents = text.match(/.+?[.!?](?=\s|$)\s*|.+$/g) || [text], out = [];
+  let cur = '';
+  sents.forEach(s => { if (cur && (cur + s).length > 200) { out.push(cur.trim()); cur = ''; } cur += s; });
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+function cardSpeech(c) {
+  const parts = [c.h];
+  if (L.i === 0 && L.st.goals) parts.push('Das kannst du danach: ' + L.st.goals.join('. '));
+  if (c.body) parts.push(c.body);
+  if (c.worked) { parts.push(c.worked.given); c.worked.steps.forEach(s => parts.push(s[0] + ': ' + s[1])); }
+  if (c.check) parts.push((/^Kurz testen/.test(c.h) ? '' : 'Kurz testen. ') + c.check.q + ' Wähle die richtige Antwort.');
+  else if (c.sim && !c.body) parts.push('Probiere die Simulation aus.');
+  return speechClean(parts.join('. '));
+}
 function audioLesson() {
-  const c = L.st.lesson[L.i];
-  if (c && c.w) audioPlay('audio/' + TOPIC.audio.dir + '/' + L.st.id + '-c' + L.i + '-w.mp3', c.w);
+  const c = L.st.lesson[L.i]; if (!c) return;
+  const idx = c.ai !== undefined ? c.ai : L.i, text = c.w || cardSpeech(c);
+  if (TOPIC.audio.files !== false && idx >= 0) audioPlay('audio/' + TOPIC.audio.dir + '/' + L.st.id + '-c' + idx + '-w.mp3', text);
+  else audioPlay(null, text);
 }
 function audioPraise() {
   if (!TOPIC.audio || state.audioOff || ui.screen !== 'round' || !R) return;
